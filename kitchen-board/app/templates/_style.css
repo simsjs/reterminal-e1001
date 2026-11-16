@@ -24,7 +24,8 @@
 .kb .hdr-right .wifi { margin: 0 14px 0 14px; width: 21px; height: 16px; }
 .kb .wifi path { fill: none; stroke: #000; stroke-width: 2.6; stroke-linecap: round; }
 .kb .wifi circle { fill: #000; }
-.kb .wifi-2 .w3, .kb .wifi-1 .w3, .kb .wifi-1 .w2 { stroke: #c8c8c8; }
+/* Unlit bars: a thin dotted arc, since e-ink is 1-bit and gray drops out. */
+.kb .wifi-2 .w3, .kb .wifi-1 .w3, .kb .wifi-1 .w2 { stroke-width: 1.5; stroke-dasharray: 2 1.8; stroke-linecap: butt; }
 .kb .batt { position: relative; width: 27px; height: 14px; border: 2.5px solid #000; border-radius: 3px; margin-right: 9px; }
 .kb .batt::after { content: ""; position: absolute; right: -5px; top: 3px; width: 2.5px; height: 4px; background: #000; border-radius: 0 1px 1px 0; }
 .kb .batt-fill { position: absolute; left: 1.5px; top: 1.5px; bottom: 1.5px; background: #000; }

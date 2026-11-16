@@ -12,9 +12,10 @@
 {%- assign batt = trmnl.device.percent_charged | default: 0 | round -%}
 {%- assign fill = batt | times: 20 | divided_by: 100 | round -%}
 
-{%- assign ws = trmnl.device.wifi_strength | default: 100 -%}
-{%- if ws >= 66 -%}{%- assign wc = "wifi-3" -%}
-{%- elsif ws >= 33 -%}{%- assign wc = "wifi-2" -%}
+{%- comment -%} LaraPaper reports Wi-Fi as bars, 0-3. {%- endcomment -%}
+{%- assign ws = trmnl.device.wifi_strength | default: 3 -%}
+{%- if ws >= 3 -%}{%- assign wc = "wifi-3" -%}
+{%- elsif ws == 2 -%}{%- assign wc = "wifi-2" -%}
 {%- else -%}{%- assign wc = "wifi-1" -%}{%- endif -%}
 
 {%- assign t = trmnl.sensors.latest.temperature -%}

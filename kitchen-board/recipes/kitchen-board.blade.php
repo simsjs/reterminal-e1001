@@ -10,8 +10,9 @@
   $batt = (int) round($device['percent_charged'] ?? 0);
   $fill = (int) round($batt * 20 / 100);
 
-  $ws = $device['wifi_strength'] ?? 100;
-  $wc = $ws >= 66 ? 'wifi-3' : ($ws >= 33 ? 'wifi-2' : 'wifi-1');
+  // LaraPaper reports Wi-Fi as bars, 0-3.
+  $ws = (int) ($device['wifi_strength'] ?? 3);
+  $wc = $ws >= 3 ? 'wifi-3' : ($ws == 2 ? 'wifi-2' : 'wifi-1');
 
   $tin = '--°F';
   if (!empty($latest['temperature']['value'])) {
