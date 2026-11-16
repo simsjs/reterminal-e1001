@@ -1,0 +1,45 @@
+# LaraPaper (TRMNL server) + the kitchen board screens, on the Raspberry Pi.
+#
+#   cd ~/reterminal-e1001/larapaper
+#   cp .env.example .env   # then fill it in
+#   docker compose up -d --build
+#
+# The project name is pinned to "larapaper" so Docker reuses the volumes
+# (larapaper_database, larapaper_storage) from the original ~/larapaper setup.
+name: larapaper
+
+services:
+  app:
+    image: ghcr.io/usetrmnl/larapaper:latest
+    restart: unless-stopped
+    ports:
+      - "4567:8080"
+    environment:
+      - PHP_OPCACHE_ENABLE=1
+      - TRMNL_PROXY_REFRESH_MINUTES=15
+      - DB_DATABASE=database/storage/database.sqlite
+      - APP_KEY=${APP_KEY:?Set APP_KEY in .env}
+      - APP_URL=${APP_URL:?Set APP_URL in .env}
+    volumes:
+      - database:/var/www/html/database/storage
+      - storage:/var/www/html/storage/app/public/images/generated
+
+  kitchen-board:
+    build: ../kitchen-board
+    restart: unless-stopped
+    ports:
+      - "4568:8080"   # preview in a browser: http://<pi-ip>:4568/brief
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - WEATHER_LAT=${WEATHER_LAT:-38.8462}
+      - WEATHER_LON=${WEATHER_LON:--77.3064}
+      - CALENDAR_ICS_URLS=${CALENDAR_ICS_URLS:-}
+      - BRIEF_ONLY_ICS_URLS=${BRIEF_ONLY_ICS_URLS:-}
+      - FONT_BASE_URL=${FONT_BASE_URL:-http://kitchen-board:8080}
+    volumes:
+      # A folder mount, so edits to content.yml show up after a git pull.
+      - ../kitchen-board/content:/app/content:ro
+
+volumes:
+  database:
+  storage:

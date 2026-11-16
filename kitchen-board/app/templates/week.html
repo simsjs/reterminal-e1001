@@ -1,0 +1,39 @@
+{% from "_macros.html" import header %}
+<style>{% include "_style.css" %}</style>
+<div class="kb kb-week">
+  {{ header(board_name, title, page_index, page_count, updated) }}
+
+  <div class="wk-title">{{ week_label }}</div>
+  {% if countdown %}<div class="wk-count">{{ countdown }}</div>{% endif %}
+
+  <div class="grid">
+    {% for d in days %}
+    <div class="col{{ ' today' if d.today }}">
+      <div class="col-hd">
+        <div class="col-dow">{{ d.dow }}</div>
+        <div class="col-num">{{ d.num }}</div>
+      </div>
+      <div class="col-body">
+        {% set shown = d['items'][:5] %}
+        {% for e in shown %}
+        <div class="ev{{ ' done' if e.done }}">
+          {% if e.time %}<div class="ev-time">{{ e.time }}</div>{% endif %}
+          <div class="ev-title">{{ e.title }}</div>
+        </div>
+        {% endfor %}
+        {% if d['items'] | length > 5 %}<div class="more">+{{ d['items'] | length - 5 }} MORE</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if reminders %}
+  <div class="rem">
+    <div class="rem-lbl">REMINDERS</div>
+    {% for r in reminders %}
+      {% if not loop.first %}<span class="rem-sep">·</span>{% endif %}<span class="rem-item">{{ r }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if sample %}<div class="sample">SAMPLE CALENDAR</div>{% endif %}
+</div>

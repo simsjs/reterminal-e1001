@@ -1,0 +1,48 @@
+{% from "_macros.html" import header, wx_icon %}
+<style>{% include "_style.css" %}</style>
+<div class="kb kb-brief">
+  {{ header(board_name, title, page_index, page_count, updated) }}
+
+  <div class="left">
+    <div class="dow">{{ weekday }}</div>
+    <div class="bigdate">{{ date_label }}</div>
+    {% if weather %}
+      {{ wx_icon(weather.icon) }}
+      <div class="wx-temp">{{ weather.temp }}°</div>
+      <div class="wx-hl">H {{ weather.high }}° · L {{ weather.low }}°</div>
+      <div class="wx-sum">{{ weather.summary }}</div>
+    {% else %}
+      <div class="wx-none">Weather is unavailable right now. It will retry on the next refresh.</div>
+    {% endif %}
+    <div class="inside">
+      <div class="inside-lbl">INSIDE · ONBOARD SENSOR</div>
+      <div class="inside-temp">%%IN_TEMP%%</div>
+      <div class="inside-rh">%%IN_RH%%<br>RH</div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="today-hd"><span>TODAY</span><span>{{ total }} THING{{ '' if total == 1 else 'S' }}</span></div>
+    <div class="rows">
+      {% for r in rows %}
+      <div class="row{{ ' done' if r.done }}">
+        <div class="row-time">{{ r.time }}</div>
+        <div class="row-title">{{ r.title }}</div>
+        {% if r.next %}<div class="next">NEXT</div>{% endif %}
+      </div>
+      {% else %}
+      <div class="empty">Nothing on the calendar today.</div>
+      {% endfor %}
+    </div>
+    <div class="tiles">
+      {% for t in tiles %}
+      <div class="tile">
+        <div class="tile-lbl">{{ (t.label or '') | upper }}</div>
+        <div class="tile-val">{{ t.value or '' }}</div>
+        {% if t.detail %}<div class="tile-det">{{ t.detail }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% if sample %}<div class="sample">SAMPLE CALENDAR</div>{% endif %}
+</div>

@@ -1,0 +1,43 @@
+{%- comment -%}
+  Kitchen board glue for LaraPaper (Liquid).
+  Use the same markup for both recipes:
+    Kitchen · Morning Brief  polling URL  http://kitchen-board:8080/api/brief
+    Kitchen · This Week      polling URL  http://kitchen-board:8080/api/week
+  The layout comes from the kitchen-board service; this only fills in
+  values LaraPaper knows about the device (battery, Wi-Fi, onboard sensor).
+{%- endcomment -%}
+{%- assign src = html -%}
+{%- if src == blank -%}{%- assign src = data.html -%}{%- endif -%}
+
+{%- assign batt = trmnl.device.percent_charged | default: 0 | round -%}
+{%- assign fill = batt | times: 20 | divided_by: 100 | round -%}
+
+{%- assign ws = trmnl.device.wifi_strength | default: 100 -%}
+{%- if ws >= 66 -%}{%- assign wc = "wifi-3" -%}
+{%- elsif ws >= 33 -%}{%- assign wc = "wifi-2" -%}
+{%- else -%}{%- assign wc = "wifi-1" -%}{%- endif -%}
+
+{%- assign t = trmnl.sensors.latest.temperature -%}
+{%- if t and t.value -%}
+  {%- assign unit = t.unit | downcase -%}
+  {%- if unit contains "f" -%}
+    {%- assign tin = t.value | round | append: "°F" -%}
+  {%- else -%}
+    {%- assign tin = t.value | times: 1.8 | plus: 32 | round | append: "°F" -%}
+  {%- endif -%}
+{%- else -%}
+  {%- assign tin = "--°F" -%}
+{%- endif -%}
+
+{%- assign h = trmnl.sensors.latest.humidity -%}
+{%- if h and h.value -%}
+  {%- assign hin = h.value | round | append: "%" -%}
+{%- else -%}
+  {%- assign hin = "--%" -%}
+{%- endif -%}
+
+{%- if src != blank -%}
+{{ src | replace: "%%BATTERY_FILL%%", fill | replace: "%%BATTERY%%", batt | replace: "%%WIFI_CLASS%%", wc | replace: "%%IN_TEMP%%", tin | replace: "%%IN_RH%%", hin }}
+{%- else -%}
+<div style="font: 22px/1.4 sans-serif; padding: 48px;">Kitchen board data isn't available. Check that the kitchen-board container is running and the polling URL is right.</div>
+{%- endif -%}

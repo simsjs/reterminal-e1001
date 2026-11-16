@@ -1,0 +1,38 @@
+# Content for the kitchen board that doesn't come from a calendar or weather.
+# Edit, commit and push; the board picks up changes on its next refresh
+# (this folder is mounted into the container, so no rebuild is needed).
+
+board_name: Kitchen
+
+# Three tiles at the bottom of the morning brief.
+tiles:
+  - label: Training
+    value: Easy 4 mi
+    detail: Zone 2 · 126–156
+  - label: Inbox
+    value: 3 need you
+    detail: 41 in bulk label
+  - label: Job search
+    value: 5 new roles
+    detail: Top fit 87 / 100
+
+# Shown along the bottom of the week view (first 4).
+reminders:
+  - Library books due Fri
+  - Swap furnace filter
+  - "RSVP: Thanksgiving dinner"
+
+# The nearest upcoming one within show_within_days appears top-right of the week view.
+countdowns:
+  - { name: Thanksgiving, date: 2026-11-26 }
+  - { name: Christmas, date: 2026-12-25 }
+  - { name: New Year's Day, date: 2027-01-01 }
+  - { name: MLK Day, date: 2027-01-18, show_within_days: 30 }
+  - { name: Valentine's Day, date: 2027-02-14, show_within_days: 30 }
+  - { name: Easter, date: 2027-03-28 }
+  - { name: Memorial Day, date: 2027-05-31 }
+  - { name: Fourth of July, date: 2027-07-04 }
+  - { name: Labor Day, date: 2027-09-06 }
+  - { name: Halloween, date: 2027-10-31, show_within_days: 30 }
+  - { name: Thanksgiving, date: 2027-11-25 }
+  - { name: Christmas, date: 2027-12-25 }
