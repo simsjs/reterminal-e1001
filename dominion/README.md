@@ -5,7 +5,7 @@ A full-screen LaraPaper recipe for the E1001 showing your Dominion Energy Virgin
 ![Home energy screen](preview/full.png)
 
 - **Left, this billing cycle:** kWh used so far, which day of the cycle it is, and a bar. In the bar, solid black is usage so far, stripes are the rest of the projected month, and the ▲ tick is last bill's kWh. Under the bar is the projected total and how it compares with last bill. Below that, in dollars, are the cost so far and the projected bill.
-- **Right, usage detail:** the latest full day (usually yesterday) with its 48 half-hour readings and the peak marked, the always-on draw, and the last 7 days. The Dominion logo sits in the top-right corner.
+- **Right, usage detail:** the latest full day (usually yesterday) with its 48 half-hour readings and the peak marked, the always-on draw, and the last 7 days. Your logo, if you add one, sits in the top-right corner (the preview is shown without it).
 
 ## How it works
 
@@ -33,6 +33,8 @@ It checks every 2 hours and serves the result to LaraPaper as JSON. It only read
    - `DOMINION_BRIDGE_TOKEN`: make one with `python3 -c "import secrets; print(secrets.token_urlsafe(24))"`.
    - Change `KB_PAGE_COUNT` to `4` so the kitchen screens show four dots.
    - For a first look without logging in, set `DOMINION_DEMO=1`.
+
+   Put the Dominion logo at `dominion/images/logo.png`. It stays on the Pi and out of git; see [`images/README.md`](images/README.md).
 
 2. **Build, then log in to Dominion once.** Have your phone ready: Dominion texts or emails a code, and it expires after about 5 minutes.
 
@@ -74,7 +76,7 @@ It checks every 2 hours and serves the result to LaraPaper as JSON. It only read
 | `DOMINION_ACCOUNT` / `DOMINION_METER` | from `select-account` | Pin a specific account and meter |
 | `DOMINION_DEMO` | 0 | `1` shows sample data |
 
-The logo is `images/logo.png`. Any black-on-white or colored PNG works: the bridge trims it and converts it to solid black and white at 54 px tall (set `LOGO_HEIGHT` on the bridge to change that). After changing it, run `docker compose restart dominion-bridge`.
+The logo is `images/logo.png`, kept on the Pi and ignored by git. Any black-on-white or colored PNG works: the bridge trims it and converts it to solid black and white at 54 px tall (set `LOGO_HEIGHT` on the bridge to change that). After changing it, run `docker compose restart dominion-bridge`.
 
 ## When it stops working
 
