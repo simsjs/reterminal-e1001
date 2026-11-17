@@ -1,11 +1,11 @@
 # Polestar status screen
 
-A full-screen LaraPaper recipe for the E1001 showing both cars (Snow and Midnight). It has the same header row as the kitchen board: page dots, **POLESTAR · STATUS**, Wi-Fi and battery. Below the header, a car picture fills the left 60% of the screen. On the right, each car gets:
+A full-screen LaraPaper recipe for the E1001 showing both cars (Snow and Midnight). It has the same header row as the kitchen board: page dots, **POLESTAR STATUS**, Wi-Fi and battery. Below the header, a car picture fills the left 60% of the screen. On the right, each car gets:
 
 - charge %, range and charge limit
 - a **Charging** pill and completion time, shown only while charging
 - a charge bar with a limit line
-- odometer, efficiency and when the car last reported
+- odometer, efficiency and when the car last reported. If Polestar reports an impossible efficiency, the screen keeps the last sensible one, or shows "Pending" until one arrives.
 
 ## How it works
 

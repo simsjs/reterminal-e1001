@@ -346,6 +346,25 @@ def _display_names(cars: list[CarSnapshot]) -> dict[str, str]:
     return names
 
 
+# Polestar sometimes reports a nonsense average consumption (seen: ~0.9 kWh/100 km,
+# which would read "69 mi/kWh"). Real EVs land around 10-40 kWh/100 km. Outside
+# this range the screen shows the car's last sensible value, or "Pending" until one
+# arrives. The last values are kept in memory, so a bridge restart clears them.
+SANE_CONSUMPTION_KWH_100KM = (8.0, 60.0)
+_last_sane_consumption: dict[str, float] = {}
+
+
+def _sane_consumption(c: CarSnapshot) -> float | None:
+    low, high = SANE_CONSUMPTION_KWH_100KM
+    value = c.consumption_kwh_100km
+    if value is not None and low <= value <= high:
+        _last_sane_consumption[c.vin] = value
+        return value
+    if value is not None and c.vin not in _last_sane_consumption:
+        log.info("Ignoring implausible consumption %.2f kWh/100 km for VIN ...%s", value, c.vin[-4:])
+    return _last_sane_consumption.get(c.vin)
+
+
 def format_car(c: CarSnapshot, name: str, imperial: bool, now: datetime) -> dict[str, Any]:
     dist = (lambda km: km / KM_PER_MI) if imperial else (lambda km: km)
     status = c.charging_status or ""
@@ -372,12 +391,15 @@ def format_car(c: CarSnapshot, name: str, imperial: bool, now: datetime) -> dict
         full_range = c.range_km / c.percent * 100
 
     efficiency = None
-    if c.consumption_kwh_100km:
+    consumption = _sane_consumption(c)
+    if consumption:
         efficiency = (
-            _num(100 / (c.consumption_kwh_100km * KM_PER_MI), 1)  # mi/kWh
+            _num(100 / (consumption * KM_PER_MI), 1)  # mi/kWh
             if imperial
-            else _num(c.consumption_kwh_100km, 1)  # kWh/100 km
+            else _num(consumption, 1)  # kWh/100 km
         )
+    # Reported, but nothing sensible yet: show "Pending" rather than hiding it.
+    efficiency_pending = efficiency is None and bool(c.consumption_kwh_100km)
 
     full_at = None
     if charging and c.minutes_to_full:
@@ -404,7 +426,8 @@ def format_car(c: CarSnapshot, name: str, imperial: bool, now: datetime) -> dict
         "time_to_full": _duration(c.minutes_to_full) if charging else None,
         "full_by": _clock(full_at, now),
         "odometer": _num(dist(c.odometer_m / 1000)) if c.odometer_m is not None else None,
-        "efficiency": efficiency,
+        "efficiency": "Pending" if efficiency_pending else efficiency,
+        "efficiency_pending": efficiency_pending,
         "service": None,  # not shown on the panel (by request); days/distance remain in CarSnapshot
         "service_soon": False,
         "warnings": c.warnings,

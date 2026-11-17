@@ -36,7 +36,7 @@
               {% render "ps_meter", car: car %}
               <div class="ps-row" style="gap: 0">
                 {% if car.odometer %}<div class="ps-grow"><div class="ps-dt" style="font-size: 10px; margin-bottom: 1px">Odometer</div><div class="ps-dd" style="font-size: 14px">{{ car.odometer }} <small style="font-size: 11px">{{ du }}</small></div></div>{% endif %}
-                {% if car.efficiency %}<div class="ps-grow ps-vrule" style="padding-left: 8px"><div class="ps-dt" style="font-size: 10px; margin-bottom: 1px">Efficiency</div><div class="ps-dd" style="font-size: 14px">{{ car.efficiency }} <small style="font-size: 11px">{{ eff_unit }}</small></div></div>{% endif %}
+                {% if car.efficiency %}<div class="ps-grow ps-vrule" style="padding-left: 8px"><div class="ps-dt" style="font-size: 10px; margin-bottom: 1px">Efficiency</div><div class="ps-dd" style="font-size: 14px">{{ car.efficiency }}{% unless car.efficiency_pending %} <small style="font-size: 11px">{{ eff_unit }}</small>{% endunless %}</div></div>{% endif %}
                 {% if car.as_of %}<div class="ps-grow ps-vrule" style="padding-left: 8px"><div class="ps-dt" style="font-size: 10px; margin-bottom: 1px">Last updated</div><div class="ps-dd" style="font-size: 14px">{{ car.as_of }}</div></div>{% endif %}
               </div>
               {% if car.warning_count > 0 %}<div class="ps-alert" style="font-size: 13px; padding: 3px 8px; gap: 6px">{% render "ps_icon", state: "warn" %}{{ car.warnings | first }}</div>{% endif %}
@@ -147,7 +147,7 @@
             <div><div class="ps-dt">Charger</div><div class="ps-dd">{% if car.plugged %}Plugged in{% else %}Unplugged{% endif %}</div></div>
           {% endif %}
           {% if car.odometer %}<div><div class="ps-dt">Odometer</div><div class="ps-dd">{{ car.odometer }} <small>{{ du }}</small></div></div>{% endif %}
-          {% if car.efficiency %}<div><div class="ps-dt">Avg efficiency</div><div class="ps-dd">{{ car.efficiency }} <small>{{ eff_unit }}</small></div></div>{% endif %}
+          {% if car.efficiency %}<div><div class="ps-dt">Avg efficiency</div><div class="ps-dd">{{ car.efficiency }}{% unless car.efficiency_pending %} <small>{{ eff_unit }}</small>{% endunless %}</div></div>{% endif %}
           {% if car.service %}<div><div class="ps-dt">Next service</div><div class="ps-dd">{{ car.service }}</div></div>{% endif %}
         </div>
       </div>
@@ -176,7 +176,7 @@
             {% if car.charging %}
               {% if car.full_by %}<div class="ps-meta" style="font-size: 19px">Full by <b>{{ car.full_by }}</b></div>{% endif %}{% if car.power %}<div class="ps-meta" style="font-size: 17px">{{ car.power }}{% if car.charge_type %} {{ car.charge_type }}{% endif %}</div>{% endif %}
             {% endif %}
-            {% if car.odometer %}<div class="ps-meta" style="font-size: 17px">{{ car.odometer }} {{ du }}{% if car.efficiency %} · {{ car.efficiency }} {{ eff_unit }}{% endif %}</div>{% endif %}
+            {% if car.odometer %}<div class="ps-meta" style="font-size: 17px">{{ car.odometer }} {{ du }}{% if car.efficiency %} · {{ car.efficiency }}{% unless car.efficiency_pending %} {{ eff_unit }}{% endunless %}{% endif %}</div>{% endif %}
             {% if car.warning_count > 0 %}<div class="ps-alert" style="font-size: 15px; padding: 4px 10px; max-width: 100%">{% render "ps_icon", state: "warn" %}{{ car.warnings | first }}</div>
             {% elsif car.service and car.charging == false %}<div class="ps-meta" style="font-size: 17px">Service in {{ car.service }}</div>{% endif %}
           </div>
