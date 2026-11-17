@@ -1,4 +1,4 @@
-# LaraPaper (TRMNL server) + the kitchen board screens, on the Raspberry Pi.
+# LaraPaper (TRMNL server) + the kitchen board and Polestar screens, on the Raspberry Pi.
 #
 #   cd ~/reterminal-e1001/larapaper
 #   cp .env.example .env   # then fill it in
@@ -39,6 +39,26 @@ services:
     volumes:
       # A folder mount, so edits to content.yml show up after a git pull.
       - ../kitchen-board/content:/app/content:ro
+
+  polestar-bridge:
+    build: ../polestar/bridge
+    restart: unless-stopped
+    ports:
+      - "4569:8765"   # car images page: http://<pi-ip>:4569/images?token=<POLESTAR_BRIDGE_TOKEN>
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - POLESTAR_USERNAME=${POLESTAR_USERNAME:-}
+      - POLESTAR_PASSWORD=${POLESTAR_PASSWORD:-}
+      - BRIDGE_TOKEN=${POLESTAR_BRIDGE_TOKEN:-}
+      - CAR_NAMES=${POLESTAR_CAR_NAMES:-}
+      - POLESTAR_VINS=${POLESTAR_VINS:-}
+      - REFRESH_MINUTES=${POLESTAR_REFRESH_MINUTES:-10}
+      - DEMO=${POLESTAR_DEMO:-0}
+      - LOGO_FILE=/app/images/logo.png
+      - PHOTO_FILE=/app/images/cars
+    volumes:
+      # Your own images (not in git): logo.png and a cars/ folder of car pictures.
+      - ../polestar/images:/app/images:ro
 
 volumes:
   database:

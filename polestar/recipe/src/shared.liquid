@@ -1,0 +1,124 @@
+{% assign ps_font = trmnl.plugin_settings.custom_fields_values.font_base | default: "http://kitchen-board:8080" %}
+<style>
+  /* Header row: same look as the kitchen board (fonts are served by the kitchen-board container) */
+  @font-face { font-family: "KB Mono"; src: url("{{ ps_font }}/fonts/SpaceMono-Bold.ttf") format("truetype"); font-weight: 700; }
+  .psx { position: fixed; top: 0; left: 0; z-index: 2147483647; width: 800px; height: 480px; overflow: hidden; background: #fff; color: #000; }
+  .psx-body { position: absolute; top: 44px; left: 0; width: 800px; height: 436px; display: flex; }
+  .ps-hdr { position: absolute; left: 0; top: 0; width: 800px; height: 44px; border-bottom: 3px solid #000; box-sizing: border-box;
+    display: flex; align-items: center; padding: 0 21px 0 20px; color: #000; }
+  .ps-hdr .dots { display: flex; gap: 6px; margin-right: 13px; }
+  .ps-hdr .dot { width: 10px; height: 10px; border: 2px solid #000; border-radius: 50%; box-sizing: border-box; }
+  .ps-hdr .dot.on { background: #000; }
+  .ps-hdr .hdr-title { font: 700 14px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.8px; }
+  .ps-hdr .hdr-right { margin-left: auto; display: flex; align-items: center; font: 700 14px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.8px; }
+  .ps-hdr .wifi { margin: 0 14px 0 0; width: 21px; height: 16px; }
+  .ps-hdr .wifi path { fill: none; stroke: #000; stroke-width: 2.6; stroke-linecap: round; }
+  .ps-hdr .wifi circle { fill: #000; }
+  .ps-hdr .wifi-2 .w3, .ps-hdr .wifi-1 .w3, .ps-hdr .wifi-1 .w2 { stroke: #c8c8c8; }
+  .ps-hdr .batt { position: relative; width: 27px; height: 14px; border: 2.5px solid #000; border-radius: 3px; margin-right: 9px; box-sizing: border-box; }
+  .ps-hdr .batt::after { content: ""; position: absolute; right: -5px; top: 3px; width: 2.5px; height: 4px; background: #000; border-radius: 0 1px 1px 0; }
+  .ps-hdr .batt-fill { position: absolute; left: 1.5px; top: 1.5px; bottom: 1.5px; background: #000; }
+
+  /* Polestar panel — pure black/white so it stays crisp on 1-bit e-ink. */
+  .ps { box-sizing: border-box; position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; color: #000; font-family: "Inter", "Helvetica Neue", Arial, sans-serif; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .ps * { box-sizing: border-box; }
+  .ps-row { display: flex; align-items: stretch; }
+  .ps-grow { flex: 1 1 auto; min-width: 0; }
+  .ps-label { font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .ps-name { font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ps-meta { font-size: 16px; font-weight: 500; }
+  .ps-pct { font-weight: 700; letter-spacing: -0.045em; line-height: 0.82; white-space: nowrap; }
+  .ps-pct small { font-size: 0.42em; letter-spacing: 0; margin-left: 0.04em; font-weight: 600; }
+  .ps-range { font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
+  .ps-range small { font-size: 0.5em; font-weight: 600; letter-spacing: 0; margin-left: 0.12em; }
+  .ps-rule { border-top: 2px solid #000; }
+  .ps-vrule { border-left: 2px solid #000; }
+
+  /* Status pill: inverted when the car is actively charging or needs attention */
+  .ps-pill { display: inline-flex; align-items: center; gap: 6px; border: 2px solid #000; border-radius: 999px; padding: 3px 12px 3px 8px; font-weight: 700; white-space: nowrap; }
+  .ps-pill svg { width: 1.1em; height: 1.1em; flex: none; }
+  .ps-pill--on { background: #000; color: #fff; }
+  .ps-pill--on svg { fill: #fff; stroke: #fff; }
+
+  /* Battery bar */
+  .ps-bar { position: relative; border: 3px solid #000; border-radius: 10px; padding: 4px; margin-right: 10px; background: #fff; }
+  .ps-bar::after { content: ""; position: absolute; right: -11px; top: 28%; height: 44%; width: 7px; background: #000; border-radius: 0 4px 4px 0; }
+  .ps-track { position: relative; height: 100%; border-radius: 5px; overflow: hidden; }
+  .ps-fill { position: absolute; left: 0; top: 0; bottom: 0; background: #000; }
+  .ps-head { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(90deg, #000 0 2px, #fff 2px 6px); }
+  .ps-seg { position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), #fff calc(10% - 2px) 10%); }
+  .ps-target { position: absolute; top: -10px; bottom: -10px; width: 0; border-left: 3px solid #000; }
+  .ps-target::before { content: ""; position: absolute; left: -8px; top: -2px; border: 6px solid transparent; border-top: 8px solid #000; }
+  .ps-bar--lg { height: 62px; }
+  .ps-bar--md { height: 40px; border-radius: 8px; }
+  .ps-bar--sm { height: 26px; border-width: 2px; padding: 3px; border-radius: 6px; margin-right: 8px; }
+  .ps-bar--sm::after { right: -8px; width: 5px; }
+  .ps-bar--sm .ps-target, .ps-bar--md .ps-target { top: -7px; bottom: -7px; border-left-width: 2px; }
+  .ps-bar--sm .ps-target::before, .ps-bar--md .ps-target::before { display: none; }
+
+  /* Detail list (label / value pairs) */
+  .ps-dl { display: flex; flex-direction: column; justify-content: space-between; }
+  .ps-dl > div { padding: 5px 0; border-bottom: 2px solid #000; }
+  .ps-dl > div:last-child { border-bottom: 0; }
+  .ps-dt { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 3px; }
+  .ps-dd { font-size: 22px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ps-dd small { font-size: 15px; font-weight: 500; }
+
+  .ps-alert { display: flex; align-items: center; gap: 10px; background: #000; color: #fff; font-weight: 700; padding: 6px 12px; border-radius: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ps-alert svg { width: 20px; height: 20px; fill: #fff; flex: none; }
+
+  /* Compact card used for grids, half layouts and quadrants */
+  .ps-card { flex: 1 1 auto; width: 100%; display: flex; flex-direction: column; justify-content: space-evenly; min-width: 0; padding: 4px 2px; }
+  .ps-grid { display: grid; gap: 14px 22px; }
+  .ps-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; }
+</style>
+
+{% template ps_icon %}{% if state == "charging" %}<svg viewBox="0 0 24 24"><path d="M13.5 1 4 13.5h6.5L9 23l10-13h-6.8z"/></svg>{% elsif state == "fault" or state == "warn" %}<svg viewBox="0 0 24 24"><path d="M12 1.5 0.8 21.5h22.4zM10.8 8.5h2.4l-.3 7h-1.8zm1.2 8.8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill-rule="evenodd"/></svg>{% elsif state == "unplugged" %}<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round"><path d="M9 2v4M15 2v4M6 6h12v3.5a6 6 0 0 1-12 0zM12 15.5V22"/><path d="M3 3l18 18"/></svg>{% elsif state == "done" %}<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>{% elsif state == "scheduled" %}<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 6.5V12l3.5 2.5"/></svg>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round"><path d="M9 2v4M15 2v4M6 6h12v3.5a6 6 0 0 1-12 0zM12 15.5V22"/></svg>{% endif %}{% endtemplate %}
+
+{% template ps_pill %}<span class="ps-pill{% if car.state == 'charging' or car.state == 'fault' %} ps-pill--on{% endif %}" style="font-size: {{ fs | default: 18 }}px">{% render "ps_icon", state: car.state %}{{ car.status }}</span>{% endtemplate %}
+
+{% template ps_bar %}{% assign p = car.percent | default: 0 %}<div class="ps-bar ps-bar--{{ size }}"><div class="ps-track"><div class="ps-fill" style="width: {{ p }}%"></div>{% if car.charging and car.target and car.target > p %}<div class="ps-head" style="left: {{ p }}%; width: {{ car.target | minus: p }}%"></div>{% endif %}<div class="ps-seg"></div></div>{% if car.target and car.target < 100 %}<div class="ps-target" style="left: calc(4px + (100% - 8px) * {{ car.target }} / 100)"></div>{% endif %}</div>{% endtemplate %}
+
+{% template ps_meter %}{% assign p = car.percent | default: 0 %}<div style="position: relative; height: 22px; border: 2px solid #000; margin: 8px 0"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ p }}%; background: #000"></div>{% if car.target %}<div style="position: absolute; top: -9px; bottom: -9px; left: calc({{ car.target }}% - 1px); border-left: 3px solid #000"></div>{% endif %}</div>{% endtemplate %}
+
+{% template ps_card %}
+<div class="ps-card" style="gap: {% if size == 'sm' %}8{% else %}12{% endif %}px">
+  <div class="ps-row" style="align-items: center; gap: 10px">
+    <div class="ps-name ps-grow" style="font-size: {% if size == 'sm' %}20{% else %}24{% endif %}px">{{ car.name }}</div>
+    {% render "ps_pill", car: car, fs: 15 %}
+  </div>
+  <div class="ps-row" style="align-items: flex-end; gap: 16px">
+    <div class="ps-pct" style="font-size: {% if size == 'sm' %}58{% else %}76{% endif %}px">{{ car.percent | default: '–' }}<small>%</small></div>
+    <div class="ps-grow" style="padding-bottom: 2px">
+      {% if car.range %}<div class="ps-range" style="font-size: {% if size == 'sm' %}26{% else %}32{% endif %}px">{{ car.range }}<small>{{ du }}</small></div>{% endif %}
+      <div class="ps-meta" style="font-size: 15px; margin-top: 4px">
+        {% if car.charging and car.full_by %}Full by {{ car.full_by }}{% elsif car.power %}{{ car.power }}{% elsif car.target %}Limit {{ car.target }}%{% endif %}
+      </div>
+    </div>
+  </div>
+  {% render "ps_bar", car: car, size: size %}
+  {% if car.warning_count > 0 and size != 'sm' %}<div class="ps-alert" style="font-size: 15px; padding: 4px 10px">{% render "ps_icon", state: "warn" %}{{ car.warnings | first }}</div>{% endif %}
+</div>
+{% endtemplate %}
+
+{% template ps_logo %}<div style="flex: none; width: {{ logo.size | plus: 10 }}px; display: flex; align-items: center; justify-content: center"><img src="{{ logo.src }}" width="{{ logo.size }}" height="{{ logo.size }}" alt="" style="display: block; image-rendering: pixelated"></div>{% endtemplate %}
+
+{% template ps_header %}{% assign pn = cfv.page_number | default: 3 | plus: 0 %}{% assign pc = cfv.page_count | default: 3 | plus: 0 %}{% if pc < pn %}{% assign pc = pn %}{% endif %}{% assign batt = device.percent_charged | default: 0 | round %}{% assign fill = batt | times: 20 | divided_by: 100 | round %}{% assign ws = device.wifi_strength | default: 100 %}{% if ws >= 66 %}{% assign wc = "wifi-3" %}{% elsif ws >= 33 %}{% assign wc = "wifi-2" %}{% else %}{% assign wc = "wifi-1" %}{% endif %}
+<div class="ps-hdr">
+  <div class="dots">{% for i in (1..pc) %}<div class="dot{% if i == pn %} on{% endif %}"></div>{% endfor %}</div>
+  <div class="hdr-title">POLESTAR · STATUS</div>
+  <div class="hdr-right">
+    <svg class="wifi {{ wc }}" viewBox="0 0 21 16"><path class="w3" d="M1.6 5.6a12.6 12.6 0 0 1 17.8 0"/><path class="w2" d="M4.6 8.7a8.3 8.3 0 0 1 11.8 0"/><circle cx="10.5" cy="13.2" r="2.1"/></svg>
+    <div class="batt"><div class="batt-fill" style="width:{{ fill }}px"></div></div>
+    <span>{{ batt }}%</span>
+  </div>
+</div>
+{% endtemplate %}
+
+{% template ps_error %}
+<div class="ps-empty">
+  <svg viewBox="0 0 24 24" width="64" height="64"><path d="M12 1.5 0.8 21.5h22.4zM10.8 8.5h2.4l-.3 7h-1.8zm1.2 8.8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill-rule="evenodd"/></svg>
+  <div class="ps-name" style="font-size: 30px">No Polestar data yet</div>
+  <div class="ps-meta" style="max-width: 560px; white-space: normal">{% if error %}{{ error | truncate: 140 }}{% else %}Check that polestar-bridge is running and the Bridge URL and token are set in this recipe.{% endif %}</div>
+</div>
+{% endtemplate %}

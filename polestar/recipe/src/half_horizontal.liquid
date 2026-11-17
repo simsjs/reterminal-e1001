@@ -1,0 +1,37 @@
+<div class="view view--half_horizontal">
+  <div class="layout" style="padding: 0">
+    <div class="ps" style="padding: 10px 20px 8px">
+    {% assign du = dist_unit | default: "mi" %}
+    {% if car_count == 0 or cars == empty or cars == nil %}
+      {% render "ps_error", error: error %}
+    {% elsif car_count == 1 %}
+      {% assign car = cars[0] %}
+      <div class="ps-row ps-grow" style="gap: 22px; align-items: center">
+        <div style="width: 250px">
+          <div class="ps-name" style="font-size: 24px">{{ car.name }}</div>
+          <div class="ps-pct" style="font-size: 104px; margin-top: 8px">{{ car.percent | default: '–' }}<small>%</small></div>
+        </div>
+        <div style="width: 250px; display: flex; flex-direction: column; gap: 12px">
+          {% render "ps_bar", car: car, size: "md" %}
+          {% if car.range %}<div class="ps-range" style="font-size: 38px">{{ car.range }}<small>{{ du }}</small></div>{% endif %}
+        </div>
+        <div class="ps-grow" style="display: flex; flex-direction: column; gap: 9px; align-items: flex-start">
+          {% render "ps_pill", car: car, fs: 16 %}
+          {% if car.charging and car.full_by %}<div class="ps-meta" style="font-size: 18px">Full by <b>{{ car.full_by }}</b></div>
+          {% elsif car.target %}<div class="ps-meta" style="font-size: 18px">Limit {{ car.target }}%</div>{% endif %}
+          {% if car.warning_count > 0 %}<div class="ps-alert" style="font-size: 14px; padding: 3px 8px; max-width: 100%">{% render "ps_icon", state: "warn" %}{{ car.warnings | first }}</div>
+          {% elsif car.odometer %}<div class="ps-meta">{{ car.odometer }} {{ du }}</div>{% endif %}
+        </div>
+      </div>
+    {% else %}
+      <div class="ps-grid ps-grow" style="grid-template-columns: 1fr 1fr">
+        {% for car in cars limit: 2 %}{% render "ps_card", car: car, du: du, size: "sm" %}{% endfor %}
+      </div>
+    {% endif %}
+    </div>
+  </div>
+  <div class="title_bar">
+    <span class="title">Polestar</span>
+    <span class="instance">{% if updated %}Updated {{ updated }}{% endif %}</span>
+  </div>
+</div>

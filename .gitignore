@@ -1,3 +1,10 @@
 .env
 __pycache__/
 *.pyc
+
+# Your own images for the Polestar screen stay on the Pi, out of git.
+polestar/images/*
+!polestar/images/README.md
+!polestar/images/cars/
+polestar/images/cars/*
+!polestar/images/cars/.gitkeep

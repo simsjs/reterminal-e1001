@@ -1,0 +1,20 @@
+<div class="view view--half_vertical">
+  <div class="layout" style="padding: 0">
+    <div class="ps" style="padding: 14px 18px 10px">
+    {% assign du = dist_unit | default: "mi" %}
+    {% if car_count == 0 or cars == empty or cars == nil %}
+      {% render "ps_error", error: error %}
+    {% else %}
+      <div class="ps-grid ps-grow" style="grid-template-columns: 1fr; grid-template-rows: repeat({% if car_count > 1 %}2{% else %}1{% endif %}, 1fr); gap: 10px">
+        {% for car in cars limit: 2 %}
+          <div style="display: flex; {% unless forloop.first %}border-top: 2px solid #000; padding-top: 10px;{% endunless %}">{% render "ps_card", car: car, du: du, size: "md" %}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    </div>
+  </div>
+  <div class="title_bar">
+    <span class="title">Polestar</span>
+    <span class="instance">{% if updated %}{{ updated }}{% endif %}</span>
+  </div>
+</div>

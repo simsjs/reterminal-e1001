@@ -1,0 +1,50 @@
+---
+name: Polestar
+id: 25b388a5-b7e1-4ea7-baa1-9a2f04d93860
+strategy: polling
+polling_verb: get
+polling_url: "{{ bridge_url }}/polestar.json?units={{ units }}"
+polling_headers: authorization=Bearer {{ bridge_token }}
+polling_body: ''
+refresh_interval: 15
+no_screen_padding: 'no'
+dark_mode: 'no'
+static_data: ''
+framework_version: latest
+custom_fields:
+- keyname: about
+  field_type: author_bio
+  name: About
+  description: Charge level, range, charging status, odometer and service info for your Polestar(s). Needs the small polestar-bridge service running on your network (see README).
+- keyname: bridge_url
+  field_type: url
+  name: Bridge URL
+  description: Where polestar-bridge is running, without a trailing slash. In this repo's Docker setup it's http://polestar-bridge:8765.
+  placeholder: http://polestar-bridge:8765
+  default: http://polestar-bridge:8765
+- keyname: bridge_token
+  field_type: password
+  name: Bridge token
+  description: The POLESTAR_BRIDGE_TOKEN value from larapaper/.env.
+- keyname: units
+  field_type: select
+  name: Units
+  options:
+  - Miles: imperial
+  - Kilometers: metric
+  default: imperial
+- keyname: page_number
+  field_type: number
+  name: Page dot
+  description: Which header dot is filled for this screen (the kitchen screens are 1 and 2).
+  default: 3
+- keyname: page_count
+  field_type: number
+  name: Total pages
+  description: How many dots the header shows.
+  default: 3
+- keyname: font_base
+  field_type: url
+  name: Header font source
+  description: Where the header font is loaded from. The kitchen-board container serves it.
+  default: http://kitchen-board:8080

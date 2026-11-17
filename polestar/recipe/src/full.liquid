@@ -1,0 +1,195 @@
+<div class="view view--full">
+  <div class="psx">
+  {% render "ps_header", device: trmnl.device, cfv: trmnl.plugin_settings.custom_fields_values %}
+  <div class="psx-body">
+    <div class="ps" style="padding: 18px 24px 14px">
+    {% assign du = dist_unit | default: "mi" %}
+    {% if car_count == 0 or cars == empty or cars == nil %}
+      {% render "ps_error", error: error %}
+
+    {% elsif car_count == 2 and photo %}
+      <!-- ── Two cars + car image on the left (60%) ──────────── -->
+      <div class="ps-row ps-grow" style="margin: -18px -24px -14px; min-height: 0">
+        <div style="flex: none; width: {{ photo.width }}px; display: flex; align-items: center; justify-content: center">
+          <img src="{{ photo.src }}" width="{{ photo.width }}" height="{{ photo.height }}" alt="" style="display: block; image-rendering: pixelated">
+        </div>
+        <div class="ps-vrule"></div>
+        <div class="ps-grow" style="display: flex; flex-direction: column; min-width: 0">
+          {% for car in cars %}
+            {% unless forloop.first %}<div class="ps-rule"></div>{% endunless %}
+            {% assign lw = 0 %}{% if logo %}{% assign lw = logo.small_size | plus: 8 %}{% endif %}
+            <div class="ps-grow" style="display: flex; flex-direction: column; justify-content: space-between; padding: 10px 14px 10px 14px; min-height: 0">
+              <div class="ps-row" style="align-items: flex-start; gap: 8px">
+                <div class="ps-row ps-grow" style="align-items: center; gap: 8px; min-width: 0; padding-top: 4px">
+                  {% if logo %}<img src="{{ logo.small_src }}" width="{{ logo.small_size }}" height="{{ logo.small_size }}" alt="" style="display: block; flex: none; image-rendering: pixelated">{% endif %}
+                  <div class="ps-name" style="font-size: 26px">{{ car.name }}</div>
+                </div>
+                <div class="ps-pct" style="flex: none; font-size: 56px">{{ car.percent | default: '–' }}<small>%</small></div>
+              </div>
+              <div class="ps-meta" style="text-align: right; font-size: 14px; white-space: nowrap; margin-top: 4px">{% if car.range %}<b style="font-size: 18px">{{ car.range }}</b> {{ du }}{% endif %}{% if car.range and car.target %} · {% endif %}{% if car.target %}{{ car.target }}% limit{% endif %}</div>
+              {% if car.charging %}
+                <div class="ps-row" style="align-items: center; gap: 7px; margin-top: 6px; white-space: nowrap">
+                  <span class="ps-pill ps-pill--on" style="font-size: 13px; padding: 3px 10px 3px 7px; gap: 3px">{% render "ps_icon", state: "charging" %}Charging</span>
+                  {% if car.full_by %}<span class="ps-meta" style="font-size: 13px; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis">Complete at <b>{{ car.full_by }}</b></span>{% endif %}
+                </div>
+              {% endif %}
+              {% render "ps_meter", car: car %}
+              <div class="ps-row" style="gap: 0">
+                {% if car.odometer %}<div class="ps-grow"><div class="ps-dt" style="font-size: 10px; margin-bottom: 1px">Odometer</div><div class="ps-dd" style="font-size: 14px">{{ car.odometer }} <small style="font-size: 11px">{{ du }}</small></div></div>{% endif %}
+                {% if car.efficiency %}<div class="ps-grow ps-vrule" style="padding-left: 8px"><div class="ps-dt" style="font-size: 10px; margin-bottom: 1px">Efficiency</div><div class="ps-dd" style="font-size: 14px">{{ car.efficiency }} <small style="font-size: 11px">{{ eff_unit }}</small></div></div>{% endif %}
+                {% if car.as_of %}<div class="ps-grow ps-vrule" style="padding-left: 8px"><div class="ps-dt" style="font-size: 10px; margin-bottom: 1px">Last updated</div><div class="ps-dd" style="font-size: 14px">{{ car.as_of }}</div></div>{% endif %}
+              </div>
+              {% if car.warning_count > 0 %}<div class="ps-alert" style="font-size: 13px; padding: 3px 8px; gap: 6px">{% render "ps_icon", state: "warn" %}{{ car.warnings | first }}</div>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    {% elsif car_count == 1 and logo %}
+      {% assign car = cars[0] %}
+      <!-- ── One car + logo panel on the right ──────────────── -->
+      <div class="ps-row ps-grow" style="gap: 22px; min-height: 0">
+        <div class="ps-grow" style="display: flex; flex-direction: column; min-width: 0">
+          <div class="ps-row" style="align-items: center; gap: 12px; padding-bottom: 8px">
+            <div class="ps-grow">
+              <div class="ps-name" style="font-size: 30px">{{ car.name }}</div>
+              <div class="ps-meta" style="margin-top: 3px; font-size: 15px">{% if car.model_year %}{{ car.model_year }}{% endif %}{% if car.registration %} · {{ car.registration }}{% endif %}{% if car.as_of %} · as of {{ car.as_of }}{% endif %}</div>
+            </div>
+            {% render "ps_pill", car: car, fs: 18 %}
+          </div>
+          <div class="ps-rule"></div>
+          <div class="ps-grow" style="display: flex; flex-direction: column; justify-content: space-between; padding-top: 10px; min-height: 0">
+            <div class="ps-row" style="align-items: flex-end; justify-content: space-between; gap: 10px">
+              <div class="ps-pct" style="font-size: 108px">{{ car.percent | default: '–' }}<small>%</small></div>
+              <div style="text-align: right; padding-bottom: 2px">
+                {% if car.range %}<div class="ps-range" style="font-size: 40px; line-height: 0.95">{{ car.range }}<small>{{ du }}</small></div>{% endif %}
+                <div class="ps-meta" style="font-size: 14px; margin-top: 3px">est. range{% if car.target %} · limit {{ car.target }}%{% endif %}</div>
+              </div>
+            </div>
+            {% render "ps_bar", car: car, size: "lg" %}
+            <div class="ps-row" style="gap: 0">
+              {% if car.charging %}
+                <div class="ps-grow"><div class="ps-dt">Charging</div><div class="ps-dd" style="font-size: 20px">{{ car.power | default: "Yes" }}{% if car.charge_type %} <small>{{ car.charge_type }}</small>{% endif %}</div></div>
+                <div class="ps-grow ps-vrule" style="padding-left: 12px"><div class="ps-dt">{% if car.target %}{{ car.target }}% by{% else %}Full by{% endif %}</div><div class="ps-dd" style="font-size: 20px">{{ car.full_by | default: "—" }}</div></div>
+              {% else %}
+                <div class="ps-grow"><div class="ps-dt">Charger</div><div class="ps-dd" style="font-size: 20px">{% if car.plugged %}Plugged in{% else %}Unplugged{% endif %}</div></div>
+                {% if car.service %}<div class="ps-grow ps-vrule" style="padding-left: 12px"><div class="ps-dt">Service in</div><div class="ps-dd" style="font-size: 20px">{{ car.service }}</div></div>{% endif %}
+              {% endif %}
+              {% if car.odometer %}<div class="ps-grow ps-vrule" style="padding-left: 12px"><div class="ps-dt">Odometer</div><div class="ps-dd" style="font-size: 20px">{{ car.odometer }} <small>{{ du }}</small></div></div>{% endif %}
+            </div>
+            {% if car.warning_count > 0 or car.stale %}
+              <div class="ps-alert" style="font-size: 16px; padding: 4px 10px">{% render "ps_icon", state: "warn" %}{% if car.warning_count > 0 %}{{ car.warnings | join: " · " }}{% else %}No update since {{ car.as_of }}{% endif %}</div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="ps-vrule"></div>
+        {% render "ps_logo", logo: logo %}
+      </div>
+
+    {% elsif car_count == 2 and logo %}
+      <!-- ── Two cars + logo panel on the right ─────────────── -->
+      <div class="ps-row ps-grow" style="gap: 22px; min-height: 0">
+        <div class="ps-grow" style="display: flex; flex-direction: column; min-width: 0">
+          {% for car in cars %}
+            {% unless forloop.first %}<div class="ps-rule" style="margin: 10px 0"></div>{% endunless %}
+            <div class="ps-row ps-grow" style="gap: 18px; align-items: center">
+              <div style="flex: none; width: 176px">
+                <div class="ps-name" style="font-size: 22px">{{ car.name }}</div>
+                <div class="ps-pct" style="font-size: 84px; margin-top: 8px">{{ car.percent | default: '–' }}<small>%</small></div>
+              </div>
+              <div class="ps-grow" style="display: flex; flex-direction: column; gap: 9px; min-width: 0">
+                <div>{% render "ps_pill", car: car, fs: 15 %}</div>
+                {% render "ps_bar", car: car, size: "md" %}
+                <div class="ps-row" style="align-items: baseline; gap: 8px">
+                  {% if car.range %}<div class="ps-range" style="font-size: 32px">{{ car.range }}<small>{{ du }}</small></div>{% endif %}
+                  <div class="ps-meta" style="margin-left: auto; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{% if car.warning_count > 0 %}<b>{{ car.warnings | first }}</b>{% elsif car.charging and car.full_by %}full by <b>{{ car.full_by }}</b>{% elsif car.target %}limit {{ car.target }}%{% endif %}</div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="ps-vrule"></div>
+        {% render "ps_logo", logo: logo %}
+      </div>
+
+    {% elsif car_count == 1 %}
+      {% assign car = cars[0] %}
+      <!-- ── One car: hero layout ───────────────────────────── -->
+      <div class="ps-row" style="align-items: center; gap: 16px; padding-bottom: 10px">
+        <div class="ps-grow">
+          <div class="ps-name" style="font-size: 32px">{{ car.name }}</div>
+          <div class="ps-meta" style="margin-top: 3px">{% if car.model_year %}{{ car.model_year }}{% endif %}{% if car.model and car.model != car.name %} · {{ car.model }}{% endif %}{% if car.registration %} · {{ car.registration }}{% endif %}{% if car.as_of %} · as of {{ car.as_of }}{% endif %}</div>
+        </div>
+        {% render "ps_pill", car: car, fs: 22 %}
+      </div>
+      <div class="ps-rule"></div>
+
+      <div class="ps-row ps-grow" style="gap: 26px; padding-top: 12px; min-height: 0; overflow: hidden">
+        <div style="flex: none; width: 470px; display: flex; flex-direction: column; justify-content: space-between">
+          <div class="ps-row" style="align-items: flex-end; justify-content: space-between; gap: 12px">
+            <div class="ps-pct" style="font-size: 120px">{{ car.percent | default: '–' }}<small>%</small></div>
+            {% if car.target %}<div style="text-align: right; padding-bottom: 4px"><div class="ps-label">Limit</div><div class="ps-range" style="font-size: 30px">{{ car.target }}<small>%</small></div></div>{% endif %}
+          </div>
+          {% render "ps_bar", car: car, size: "lg" %}
+          <div class="ps-row" style="align-items: flex-end; gap: 14px">
+            {% if car.range %}<div class="ps-range" style="font-size: 44px; line-height: 0.9">{{ car.range }}<small>{{ du }}</small></div>{% endif %}
+            <div class="ps-meta" style="font-size: 15px; line-height: 1.15">est. range{% if car.range_full %}<br>{{ car.range_full }} {{ du }} at 100%{% endif %}</div>
+          </div>
+        </div>
+
+        <div class="ps-vrule"></div>
+
+        <div class="ps-dl ps-grow">
+          {% if car.charging %}
+            <div><div class="ps-dt">Charging</div><div class="ps-dd">{{ car.power | default: "Charging" }}{% if car.charge_type %} <small>{{ car.charge_type }}</small>{% endif %}</div></div>
+            <div><div class="ps-dt">{% if car.target %}{{ car.target }}% by{% else %}Full by{% endif %}</div><div class="ps-dd">{{ car.full_by | default: "—" }}{% if car.time_to_full %} <small>{{ car.time_to_full }}</small>{% endif %}</div></div>
+          {% else %}
+            <div><div class="ps-dt">Charger</div><div class="ps-dd">{% if car.plugged %}Plugged in{% else %}Unplugged{% endif %}</div></div>
+          {% endif %}
+          {% if car.odometer %}<div><div class="ps-dt">Odometer</div><div class="ps-dd">{{ car.odometer }} <small>{{ du }}</small></div></div>{% endif %}
+          {% if car.efficiency %}<div><div class="ps-dt">Avg efficiency</div><div class="ps-dd">{{ car.efficiency }} <small>{{ eff_unit }}</small></div></div>{% endif %}
+          {% if car.service %}<div><div class="ps-dt">Next service</div><div class="ps-dd">{{ car.service }}</div></div>{% endif %}
+        </div>
+      </div>
+      {% if car.warning_count > 0 or car.stale %}
+        <div class="ps-alert" style="font-size: 18px; margin-top: 12px">{% render "ps_icon", state: "warn" %}{% if car.warning_count > 0 %}{{ car.warnings | join: " · " }}{% else %}Car hasn't reported since {{ car.as_of }}{% endif %}</div>
+      {% endif %}
+
+    {% elsif car_count == 2 %}
+      <!-- ── Two cars: stacked bands ─────────────────────────── -->
+      {% for car in cars %}
+        {% unless forloop.first %}<div class="ps-rule" style="margin: 12px 0"></div>{% endunless %}
+        <div class="ps-row ps-grow" style="gap: 22px; align-items: center">
+          <div style="flex: none; width: 236px">
+            <div class="ps-name" style="font-size: 26px">{{ car.name }}</div>
+            <div class="ps-pct" style="font-size: 100px; margin-top: 10px">{{ car.percent | default: '–' }}<small>%</small></div>
+          </div>
+          <div style="flex: none; width: 236px; display: flex; flex-direction: column; gap: 12px">
+            <div style="padding-top: 6px">{% render "ps_bar", car: car, size: "md" %}</div>
+            <div class="ps-row" style="align-items: baseline; gap: 8px">
+              {% if car.range %}<div class="ps-range" style="font-size: 40px">{{ car.range }}<small>{{ du }}</small></div>{% endif %}
+              {% if car.target %}<div class="ps-meta" style="margin-left: auto">limit {{ car.target }}%</div>{% endif %}
+            </div>
+          </div>
+          <div class="ps-grow" style="display: flex; flex-direction: column; gap: 9px; align-items: flex-start; overflow: hidden">
+            {% render "ps_pill", car: car, fs: 17 %}
+            {% if car.charging %}
+              {% if car.full_by %}<div class="ps-meta" style="font-size: 19px">Full by <b>{{ car.full_by }}</b></div>{% endif %}{% if car.power %}<div class="ps-meta" style="font-size: 17px">{{ car.power }}{% if car.charge_type %} {{ car.charge_type }}{% endif %}</div>{% endif %}
+            {% endif %}
+            {% if car.odometer %}<div class="ps-meta" style="font-size: 17px">{{ car.odometer }} {{ du }}{% if car.efficiency %} · {{ car.efficiency }} {{ eff_unit }}{% endif %}</div>{% endif %}
+            {% if car.warning_count > 0 %}<div class="ps-alert" style="font-size: 15px; padding: 4px 10px; max-width: 100%">{% render "ps_icon", state: "warn" %}{{ car.warnings | first }}</div>
+            {% elsif car.service and car.charging == false %}<div class="ps-meta" style="font-size: 17px">Service in {{ car.service }}</div>{% endif %}
+          </div>
+        </div>
+      {% endfor %}
+
+    {% else %}
+      <!-- ── Three or four cars: 2 × 2 grid ──────────────────── -->
+      <div class="ps-grid ps-grow" style="grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr">
+        {% for car in cars limit: 4 %}{% render "ps_card", car: car, du: du, size: "md" %}{% endfor %}
+      </div>
+    {% endif %}
+    </div>
+  </div>
+  </div>
+</div>
