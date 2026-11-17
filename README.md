@@ -8,7 +8,7 @@ home energy screen for Dominion Energy (see [`dominion/`](dominion/README.md)).
 | Time | Screen |
 | --- | --- |
 | 6:00–9:00 AM | **Morning brief**: date, weather, today's events, three tiles |
-| 9:00 AM–10:00 PM | **This week**: Mon–Sun calendar, a holiday countdown, reminders |
+| 9:00 AM–10:00 PM | **This week**: yesterday, today and the next three days, a holiday countdown, reminders |
 | 10:00 PM–6:00 AM | Sleep, with no refreshes, to save battery |
 
 | Morning brief | This week |

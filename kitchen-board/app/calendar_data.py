@@ -111,8 +111,10 @@ def using_sample() -> bool:
 def events_between(start: date, end: date, include_brief_only: bool) -> list[Event]:
     """Events with start <= day < end, deduplicated and sorted (timed first)."""
     if using_sample():
-        week_start = start - timedelta(days=start.weekday())
-        events = [e for e in _sample(week_start) if start <= e.day < end]
+        events, week_start = [], start - timedelta(days=start.weekday())
+        while week_start < end:   # the window can cross into next week
+            events += [e for e in _sample(week_start) if start <= e.day < end]
+            week_start += timedelta(days=7)
     else:
         events = []
         sources = [(u, "main") for u in config.CALENDAR_ICS_URLS]

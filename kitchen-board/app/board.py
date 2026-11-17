@@ -114,15 +114,27 @@ def _countdown(content: dict, today: date) -> str:
     return f"{name} IN {days} DAYS"
 
 
+# This Week shows yesterday, today and the next three days.
+WEEK_DAYS_BEFORE = 1
+WEEK_DAYS_AFTER = 3
+
+
+def _range_label(first: date, last: date) -> str:
+    if first.month == last.month:
+        return f"{first.strftime('%b')} {first.day} – {last.day}"
+    return f"{first.strftime('%b')} {first.day} – {last.strftime('%b')} {last.day}"
+
+
 def build_week(n: datetime) -> dict:
     content = load_content()
     today = n.date()
-    monday = today - timedelta(days=today.weekday())
-    events = calendar_data.events_between(monday, monday + timedelta(days=7), include_brief_only=False)
+    first = today - timedelta(days=WEEK_DAYS_BEFORE)
+    count = WEEK_DAYS_BEFORE + 1 + WEEK_DAYS_AFTER
+    events = calendar_data.events_between(first, first + timedelta(days=count), include_brief_only=False)
 
     days = []
-    for i in range(7):
-        d = monday + timedelta(days=i)
+    for i in range(count):
+        d = first + timedelta(days=i)
         items = []
         for e in (ev for ev in events if ev.day == d):
             if d < today:
@@ -143,7 +155,7 @@ def build_week(n: datetime) -> dict:
     return {
         **_common("week", n, content),
         "title": "THIS WEEK",
-        "week_label": f"Week of {monday.strftime('%b')} {monday.day}",
+        "week_label": _range_label(first, first + timedelta(days=count - 1)),
         "countdown": _countdown(content, today),
         "days": days,
         "reminders": reminders,
