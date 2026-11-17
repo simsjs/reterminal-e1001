@@ -16,7 +16,7 @@ A full-screen LaraPaper recipe for the E1001 showing your training from Strava. 
 
 The previews use made-up data. The route in the run preview is a drawn shape, not a real place.
 
-**Right, hours per week.** Total, cycling, running and strength, each with this week's hours, the average of the last 6 full weeks, and a bar per week (this week is striped). Strength counts lifting and rucking together. The black pill at the bottom is this week's relative effort, then the 6-week average.
+**Right, hours per week.** Total, cycling, running and strength, each with this week's hours, the average of the last 6 full weeks, and a bar per week with its hours on top (this week is striped). A white dotted line marks the 6-week average on the Total bars. Strength counts lifting and rucking together. The black pill at the bottom is this week's relative effort, then the 6-week average.
 
 ## How it works
 

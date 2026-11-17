@@ -444,6 +444,7 @@ def build_weeks(acts: list[dict[str, Any]], now: datetime) -> dict[str, Any]:
                 "name": name,
                 "now": f"{vals[-1]:.1f}",
                 "avg": f"{avg:.1f}",
+                "avg_h": round(avg / top * WEEK_BAR_H) if key == "total" else 0,  # dotted average line, Total only
                 "bars": [
                     {"h": round(v / top * WEEK_BAR_H), "v": f"{v:.1f}" if v >= 0.05 else "", "now": i == len(vals) - 1}
                     for i, v in enumerate(vals)
