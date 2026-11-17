@@ -31,6 +31,8 @@ Environment:
     BRIDGE_TOKEN        shared secret LaraPaper must send (strongly recommended)
     REFRESH_MINUTES     background refresh interval, default 120. Dominion posts meter data
                         about once a day, so there's no point going much faster.
+    KEEPALIVE_MINUTES   how often to rotate the login tokens, default 20. Dominion's refresh
+                        token expires about 90 min after the last rotation, so keep this short.
     TZ                  IANA time zone for labels, default America/New_York
     DEMO                "1" to serve realistic fake data without logging in
     LOGO_FILE           image for the top-right corner (default: logo.png next to this script, or
@@ -66,6 +68,9 @@ TZ = ZoneInfo(os.getenv("TZ") or "America/New_York")
 TOKEN_FILE = Path(os.getenv("TOKEN_FILE", "/data/tokens.json"))
 BRIDGE_TOKEN = os.getenv("BRIDGE_TOKEN", "")
 REFRESH_MINUTES = max(30, int(os.getenv("REFRESH_MINUTES", "120") or 120))
+# Dominion's access token lives 30 min and its refresh token dies roughly an hour after
+# that, so the tokens must be rotated far more often than the data is fetched.
+KEEPALIVE_MINUTES = max(5, int(os.getenv("KEEPALIVE_MINUTES", "20") or 20))
 DEMO = os.getenv("DEMO", "0").strip().lower() in ("1", "true", "yes")
 HISTORY_DAYS = 9  # enough for 7 full days plus a day or two of reporting lag
 
@@ -344,6 +349,23 @@ class Source:
         tmp.replace(TOKEN_FILE)
         log.info("Saved refreshed Dominion tokens")
 
+    async def keepalive(self) -> None:
+        """Rotate the token pair so the refresh token never sits idle long enough to expire."""
+        if DEMO or not TOKEN_FILE.exists():
+            return
+        import aiohttp
+        from dompower import DompowerClient
+
+        tokens = self._load_tokens()
+        async with aiohttp.ClientSession() as session:
+            client = DompowerClient(
+                session,
+                access_token=tokens.get("access_token"),
+                refresh_token=tokens.get("refresh_token"),
+                token_update_callback=self._save_tokens,
+            )
+            await client.async_refresh_tokens()
+
     async def refresh(self) -> None:
         now = datetime.now(TZ)
         if DEMO:
@@ -402,14 +424,29 @@ source = Source()
 app = FastAPI(title="dominion-bridge")
 
 
+# Both loops rotate the single-use refresh token, so they must never overlap.
+_token_lock = asyncio.Lock()
+
+
 async def _loop() -> None:
     while True:
         try:
-            await source.refresh()
+            async with _token_lock:
+                await source.refresh()
         except Exception as err:  # keep serving the last good data
             source.error = f"{type(err).__name__}: {err}"
             log.warning("Refresh failed: %s", source.error)
         await asyncio.sleep(REFRESH_MINUTES * 60)
+
+
+async def _keepalive_loop() -> None:
+    while True:
+        await asyncio.sleep(KEEPALIVE_MINUTES * 60)
+        try:
+            async with _token_lock:
+                await source.keepalive()
+        except Exception as err:
+            log.warning("Token keep-alive failed: %s: %s", type(err).__name__, err)
 
 
 @app.on_event("startup")
@@ -417,6 +454,7 @@ async def _start() -> None:
     if not BRIDGE_TOKEN:
         log.warning("BRIDGE_TOKEN is not set; anyone on your network can read your usage")
     asyncio.create_task(_loop())
+    asyncio.create_task(_keepalive_loop())
 
 
 def _check(request: Request) -> None:

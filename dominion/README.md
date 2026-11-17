@@ -78,5 +78,5 @@ The logo is `images/logo.png`, kept on the Pi and ignored by git. Any black-on-w
 
 ## When it stops working
 
-- **"No Dominion data yet" with a token or auth error:** Dominion's refresh token has expired. That can happen after the Pi has been off for a long time. Run the `dompower login` command from step 2 again, then `docker compose restart dominion-bridge`.
+- **"Refresh token expired" or another auth error:** Dominion's login has lapsed. Its refresh token dies about 90 minutes after it was last used, so the bridge renews it every 20 minutes (`KEEPALIVE_MINUTES`). It can still lapse if the bridge or the Pi is off for more than about an hour. Run the `dompower login` command from step 2 again, then `docker compose restart dominion-bridge`.
 - **dompower is unofficial.** If Dominion changes its website, the screen keeps the last good data and shows **Offline**. When a fix is released, bump the version in `bridge/requirements.txt` and rebuild.
