@@ -120,6 +120,11 @@ through the Google Tasks API. That needs a one-time setup:
    python3 kitchen-board/tools/get_tasks_token.py CLIENT_ID CLIENT_SECRET
    ```
 
+   No Python on your laptop? Run it on the Pi instead: connect with
+   `ssh -L 8799:127.0.0.1:8799 <user>@<pi-ip>`, run the same command there, and
+   open the link it prints in your laptop's browser. If port 8799 is taken, add
+   another port number to the end of the command and use it in `-L` too.
+
    Sign in with the account that has your Tasks. Google warns that it hasn't
    verified the app, because it's your own. Click *Advanced → Go to E1001*,
    then allow read-only access to Tasks. The script prints three lines.

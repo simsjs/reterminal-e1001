@@ -2,14 +2,19 @@
 
 Run it on a computer with a web browser (your laptop, not the Pi):
 
-    python3 get_tasks_token.py YOUR_CLIENT_ID YOUR_CLIENT_SECRET
+    python3 get_tasks_token.py YOUR_CLIENT_ID YOUR_CLIENT_SECRET [PORT]
 
 A browser tab opens. Sign in with the Google account whose Tasks you want on the
 screen and allow read-only access to Tasks. The script then prints three lines
 to paste into larapaper/.env on the Pi. Only Python's standard library is used.
+
+PORT (default 8799) is the local port Google sends you back to after sign-in.
+Pick another if it's in use. When running this on the Pi over SSH, forward the
+same port from your laptop: ssh -L 8799:127.0.0.1:8799 you@pi
 """
 import http.server
 import json
+import os
 import secrets
 import sys
 import urllib.parse
@@ -17,14 +22,15 @@ import urllib.request
 import webbrowser
 
 SCOPE = "https://www.googleapis.com/auth/tasks.readonly"
-PORT = 8765
+DEFAULT_PORT = 8799
 
 
 def main() -> None:
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in (3, 4):
         sys.exit(__doc__)
     client_id, client_secret = sys.argv[1], sys.argv[2]
-    redirect = f"http://127.0.0.1:{PORT}/"
+    port = int(sys.argv[3]) if len(sys.argv) == 4 else DEFAULT_PORT
+    redirect = f"http://127.0.0.1:{port}/"
     state = secrets.token_urlsafe(16)
     url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode({
         "client_id": client_id,
@@ -52,9 +58,17 @@ def main() -> None:
         def log_message(self, *args):
             pass
 
-    server = http.server.HTTPServer(("127.0.0.1", PORT), Handler)
-    print("Opening your browser to sign in. If it doesn't open, visit:\n\n" + url + "\n")
-    webbrowser.open(url)
+    try:
+        server = http.server.HTTPServer(("127.0.0.1", port), Handler)
+    except OSError:
+        sys.exit(f"Port {port} is already in use. Add a different port number to the end "
+                 f"of the command (e.g. {port + 1}), and if you're on SSH, reconnect with "
+                 f"-L {port + 1}:127.0.0.1:{port + 1}.")
+    if os.environ.get("SSH_CONNECTION"):
+        print("Open this link in your laptop's browser to sign in:\n\n" + url + "\n")
+    else:
+        print("Opening your browser to sign in. If it doesn't open, visit:\n\n" + url + "\n")
+        webbrowser.open(url)
     while "code" not in result and "error" not in result:
         server.handle_request()
     server.server_close()
