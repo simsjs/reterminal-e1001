@@ -38,10 +38,6 @@ Environment:
     TZ                     IANA time zone, default America/New_York
     DEMO                   "1" to serve made-up data without signing in
     DEMO_LAYOUT            with DEMO=1: ride (default), route or effort
-    MAP_STYLE              streets under a run's route, from OpenStreetMap: light (default:
-                           main roads as thin lines, side streets dotted), detailed (adds
-                           paths, parks, water and main-road names) or off
-    OVERPASS_URL           where to ask OpenStreetMap, default https://overpass-api.de/api/interpreter
 """
 
 from __future__ import annotations
@@ -78,10 +74,6 @@ DEMO = os.getenv("DEMO", "0").strip().lower() in ("1", "true", "yes")
 DEMO_LAYOUT = os.getenv("DEMO_LAYOUT", "ride").strip().lower()
 STRENGTH_TYPES = {t.strip() for t in os.getenv("STRENGTH_TYPES", "WeightTraining,Workout,Crossfit,HIIT").split(",") if t.strip()}
 RUCK_WORDS = [w.strip().lower() for w in os.getenv("RUCK_WORDS", "ruck").split(",") if w.strip()]
-MAP_STYLE = os.getenv("MAP_STYLE", "light").strip().lower()
-if MAP_STYLE not in ("light", "detailed", "off"):
-    MAP_STYLE = "light"
-OVERPASS_URL = os.getenv("OVERPASS_URL", "https://overpass-api.de/api/interpreter").strip()
 
 API = "https://www.strava.com/api/v3"
 WEEKS_BACK = 6  # full weeks of history next to this week
@@ -94,7 +86,7 @@ FOOT_TYPES = {"Walk", "Hike"}
 WEEK_BAR_H = 26   # tallest weekly bar (its value label sits above it)
 LAP_CHART_H = 96  # lap power chart
 HR_CHART_W, HR_CHART_H = 426, 150
-MAP_W, MAP_H = 298, 244  # the map box on the full layout
+MAP_W, MAP_H = 280, 230
 
 M_PER_MI = 1609.344
 FT_PER_M = 3.28084
@@ -175,146 +167,36 @@ def decode_polyline(p: str) -> list[tuple[float, float]]:
     return pts
 
 
-class Projection:
-    """Maps lat/lng to pixels so a route fills a w×h box (north up, equal scale both ways)."""
-
-    def __init__(self, pts: list[tuple[float, float]], w: int, h: int, pad: int = 14, top: int = 22) -> None:
-        lat0 = sum(p[0] for p in pts) / len(pts)
-        self.kx = math.cos(math.radians(lat0)) * 111_320  # metres per degree of longitude here
-        self.ky = 110_574
-        xs = [p[1] * self.kx for p in pts]
-        ys = [p[0] * self.ky for p in pts]
-        self.minx, self.maxy = min(xs), max(ys)
-        span_x, span_y = max(xs) - self.minx or 1, self.maxy - min(ys) or 1
-        self.scale = min((w - 2 * pad) / span_x, (h - pad - top) / span_y)  # px per metre
-        self.ox = (w - span_x * self.scale) / 2
-        self.oy = top + (h - top - pad - span_y * self.scale) / 2
-        self.w, self.h = w, h
-
-    def xy(self, lat: float, lng: float) -> tuple[float, float]:
-        return self.ox + (lng * self.kx - self.minx) * self.scale, self.oy + (self.maxy - lat * self.ky) * self.scale
-
-    def bbox(self, margin: float = 0.08) -> tuple[float, float, float, float]:
-        """south, west, north, east of the whole box, a little larger."""
-        mx, my = self.w * margin, self.h * margin
-
-        def ll(x: float, y: float) -> tuple[float, float]:
-            return (self.maxy - (y - self.oy) / self.scale) / self.ky, ((x - self.ox) / self.scale + self.minx) / self.kx
-
-        n, w_ = ll(-mx, -my)
-        s_, e = ll(self.w + mx, self.h + my)
-        return s_, w_, n, e
-
-
-def _path(xy: list[tuple[float, float]]) -> str:
-    return "M" + " L".join(f"{x:.1f} {y:.1f}" for x, y in xy)
-
-
-def route_map(polyline: str, w: int = MAP_W, h: int = MAP_H) -> dict[str, Any] | None:
+def route_map(polyline: str, w: int = MAP_W, h: int = MAP_H, pad: int = 14) -> dict[str, Any] | None:
     """Project a route into a w×h box: an SVG path, start and finish points, and a scale bar."""
     pts = decode_polyline(polyline)
     if len(pts) < 2:
         return None
-    proj = Projection(pts, w, h)
-    xy = [proj.xy(lat, lng) for lat, lng in pts]
+    lat0 = sum(p[0] for p in pts) / len(pts)
+    kx = math.cos(math.radians(lat0)) * 111_320  # metres per degree of longitude here
+    ky = 110_574
+    xs = [p[1] * kx for p in pts]
+    ys = [p[0] * ky for p in pts]
+    span_x, span_y = max(xs) - min(xs) or 1, max(ys) - min(ys) or 1
+    top = 22  # room for the scale bar and legend
+    scale = min((w - 2 * pad) / span_x, (h - pad - top) / span_y)  # px per metre
+    ox = (w - span_x * scale) / 2
+    oy = top + (h - top - pad - span_y * scale) / 2
+    xy = [(ox + (x - min(xs)) * scale, oy + (max(ys) - y) * scale) for x, y in zip(xs, ys)]
+    path = "M" + " L".join(f"{x:.1f} {y:.1f}" for x, y in xy)
     # A round scale-bar length that fits in about a quarter of the width.
-    target = w * 0.25 / proj.scale
+    target = w * 0.25 / scale
     nice = next((n for n in (50, 100, 200, 250, 500, 1000, 2000, 5000) if n >= target * 0.6), 5000)
     label = f"{nice // 1000} KM" if nice >= 1000 else f"{nice} M"
     return {
         "w": w,
         "h": h,
-        "path": _path(xy),
+        "path": path,
         "start": {"x": round(xy[0][0], 1), "y": round(xy[0][1], 1)},
         "end": {"x": round(xy[-1][0] - 5, 1), "y": round(xy[-1][1] - 5, 1)},
-        "scale_px": round(nice * proj.scale, 1),
+        "scale_px": round(nice * scale, 1),
         "scale_label": label,
     }
-
-
-# ── Streets under the route (OpenStreetMap) ──
-MAJOR_ROADS = {"motorway", "trunk", "primary", "secondary", "tertiary", "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link"}
-MINOR_ROADS = {"residential", "unclassified", "living_street", "road"}
-FOOT_PATHS = {"footway", "path", "cycleway", "pedestrian", "track", "bridleway", "steps"}
-
-
-def overpass_query(polyline: str, style: str) -> str | None:
-    pts = decode_polyline(polyline)
-    if len(pts) < 2:
-        return None
-    s_, w_, n, e = Projection(pts, MAP_W, MAP_H).bbox()
-    bb = f"{s_:.5f},{w_:.5f},{n:.5f},{e:.5f}"
-    roads = "|".join(sorted(MAJOR_ROADS | MINOR_ROADS | (FOOT_PATHS if style == "detailed" else set())))
-    parts = [f'way["highway"~"^({roads})$"]({bb});']
-    if style == "detailed":
-        parts += [
-            f'way["leisure"~"^(park|nature_reserve|golf_course)$"]({bb});',
-            f'way["natural"="water"]({bb});',
-            f'way["waterway"~"^(stream|river|canal)$"]({bb});',
-        ]
-    return f"[out:json][timeout:25];({''.join(parts)});out geom;"
-
-
-def street_layers(osm: dict[str, Any], polyline: str, style: str) -> dict[str, Any]:
-    """Turn an Overpass answer into a few SVG paths (one per kind of feature), in the route's pixels."""
-    proj = Projection(decode_polyline(polyline), MAP_W, MAP_H)
-    w, h = MAP_W, MAP_H
-    layers: dict[str, list[str]] = {"major": [], "minor": [], "paths": [], "parks": [], "water": [], "streams": []}
-    named: dict[str, tuple[float, list[tuple[float, float]]]] = {}
-
-    for el in osm.get("elements") or []:
-        geom = el.get("geometry") or []
-        if el.get("type") != "way" or len(geom) < 2:
-            continue
-        xy: list[tuple[float, float]] = []
-        for g in geom:
-            x, y = proj.xy(g["lat"], g["lon"])
-            if not xy or abs(x - xy[-1][0]) + abs(y - xy[-1][1]) >= 0.8:  # drop points closer than a pixel
-                xy.append((x, y))
-        if len(xy) < 2 or all(not (-20 < x < w + 20 and -20 < y < h + 20) for x, y in xy):
-            continue
-        tags = el.get("tags") or {}
-        hw = tags.get("highway")
-        if hw in MAJOR_ROADS:
-            layers["major"].append(_path(xy))
-            name = tags.get("name")
-            if name:
-                length = sum(math.dist(a, b) for a, b in zip(xy, xy[1:]))
-                if length > named.get(name, (0, []))[0]:
-                    named[name] = (length, xy)
-        elif hw in MINOR_ROADS:
-            layers["minor"].append(_path(xy))
-        elif hw in FOOT_PATHS and tags.get("footway") not in ("sidewalk", "crossing"):
-            layers["paths"].append(_path(xy))
-        elif tags.get("leisure") or tags.get("natural") == "water":
-            closed = geom[0]["lat"] == geom[-1]["lat"] and geom[0]["lon"] == geom[-1]["lon"]
-            if closed:
-                layers["water" if tags.get("natural") == "water" else "parks"].append(_path(xy) + " Z")
-        elif tags.get("waterway"):
-            layers["streams"].append(_path(xy))
-
-    out: dict[str, Any] = {"style": style}
-    keep = layers.keys() if style == "detailed" else ("major", "minor")
-    for k, v in layers.items():
-        if v and k in keep:
-            out[k] = " ".join(v)
-    if style == "detailed":
-        labels = []
-        for name, (length, xy) in sorted(named.items(), key=lambda kv: -kv[1][0])[:3]:
-            if length < 90:
-                continue
-            mid = len(xy) // 2
-            (x1, y1), (x2, y2) = xy[max(0, mid - 1)], xy[min(len(xy) - 1, mid + 1)]
-            ang = math.degrees(math.atan2(y2 - y1, x2 - x1))
-            if ang > 90:
-                ang -= 180
-            elif ang < -90:
-                ang += 180
-            x, y = xy[mid]
-            if 30 < x < w - 30 and 28 < y < h - 10:
-                labels.append({"x": round(x, 1), "y": round(y - 4, 1), "r": round(ang), "t": name.upper()})
-        out["labels"] = labels
-    return out
 
 
 def area_path(values: list[float], w: int, h: int, lo: float, hi: float) -> str:
@@ -371,9 +253,7 @@ def tile(big: str, unit: str, cap: str) -> dict[str, str]:
     return {"big": big, "unit": unit, "cap": cap}
 
 
-def build_last(
-    a: dict[str, Any], detail: dict[str, Any], streams: dict[str, list], laps: list[dict], recent: list[dict], osm: dict[str, Any] | None = None
-) -> dict[str, Any]:
+def build_last(a: dict[str, Any], detail: dict[str, Any], streams: dict[str, list], laps: list[dict], recent: list[dict]) -> dict[str, Any]:
     kind = layout(a)
     start = _local(a)
     sport = a.get("sport_type") or a.get("type") or "Activity"
@@ -454,10 +334,7 @@ def build_last(
         if hr_avg:
             tiles.append(tile(f"{hr_avg:.0f}", "bpm", "avg heart rate"))
         out["tiles"] = tiles
-        poly = (a.get("map") or {}).get("summary_polyline") or ""
-        out["map"] = route_map(poly)
-        if out["map"] and osm and MAP_STYLE != "off":
-            out["map"]["layers"] = street_layers(osm, poly, MAP_STYLE)
+        out["map"] = route_map((a.get("map") or {}).get("summary_polyline") or "")
         splits = [
             s for s in (detail.get("splits_standard") or []) if (s.get("distance") or 0) >= M_PER_MI * 0.97
         ][:4]
@@ -695,7 +572,6 @@ class Source:
         self._access: str | None = None
         self._expires = 0.0
         self._cache: dict[int, tuple[str, dict, dict, list]] = {}  # activity id -> details, fetched once
-        self._osm: dict[str, Any] | None = None  # streets around the latest route; {} = none to show
 
     # Tokens
     def _refresh_token(self) -> str:
@@ -746,22 +622,6 @@ class Source:
         r.raise_for_status()
         return r.json()
 
-    async def _streets(self, client: httpx.AsyncClient, polyline: str) -> dict[str, Any] | None:
-        """Streets around the route, once per activity. None (try again next refresh) if OpenStreetMap is busy."""
-        query = overpass_query(polyline, MAP_STYLE)
-        if not query:
-            return {}
-        try:
-            r = await client.post(OVERPASS_URL, data={"data": query}, timeout=60,
-                                  headers={"User-Agent": "reterminal-e1001 strava-bridge (github.com/simsjs/reterminal-e1001)"})
-            r.raise_for_status()
-            osm = r.json()
-            log.info("Map: %d streets and features from OpenStreetMap", len(osm.get("elements") or []))
-            return osm
-        except Exception as err:
-            log.warning("Map streets unavailable for now (%s); will try again next refresh", err)
-            return None
-
     async def refresh(self) -> None:
         now = datetime.now(TZ)
         if DEMO:
@@ -798,11 +658,8 @@ class Source:
                     if kind == "ride" and not laps:
                         laps = await self._get(client, f"/activities/{a['id']}/laps")
                     self._cache = {a["id"]: (repr(key), detail, streams, laps)}
-                    self._osm = None
                 _, detail, streams, laps = self._cache[a["id"]]
-                if self._osm is None and layout(a) == "route" and MAP_STYLE != "off":
-                    self._osm = await self._streets(client, (a.get("map") or {}).get("summary_polyline") or "")
-                last = build_last(a, detail, streams, laps, acts, self._osm or None)
+                last = build_last(a, detail, streams, laps, acts)
 
         self.panel, self.error, self.last_ok = build_panel(acts, last, now), None, now
         log.info("Refreshed: %d activities, latest %s", len(acts), (last or {}).get("label", "none"))

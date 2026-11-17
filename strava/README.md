@@ -7,14 +7,14 @@ A full-screen LaraPaper recipe for the E1001 showing your training from Strava. 
 **Left, your latest activity.** The layout depends on what it was:
 
 - **A ride** (Zwift or outside): average power, heart rate, distance and moving time; max heart rate, climb, cadence, calories and PRs; best power for 5 seconds, 1, 5 and 20 minutes; and a chart of each lap's average power.
-- **A run** (or a walk, hike or ruck with GPS): distance, pace, time and heart rate, a map of the route with start and finish marked over the surrounding streets, mile splits, and best mile and 5K.
+- **A run** (or a walk, hike or ruck with GPS): distance, pace, time and heart rate, a map of the route with start and finish marked, mile splits, and best mile and 5K.
 - **Anything else**, like a lifting session or a Whoop workout: duration, Whoop strain, heart rate and calories, how many strength sessions you've done in the last 30 days, and a heart-rate chart where each spike is a set.
 
 | After a run | After a strength session |
 | --- | --- |
 | ![Run](preview/run.png) | ![Strength](preview/strength.png) |
 
-The previews use made-up data. The route in the run preview is a drawn shape, not a real place, so it has no streets under it.
+The previews use made-up data. The route in the run preview is a drawn shape, not a real place.
 
 **Right, hours per week.** Total, cycling, running and strength, each with this week's hours, the average of the last 6 full weeks, and a bar per week (this week is striped). Strength counts lifting and rucking together. The black pill at the bottom is this week's relative effort, then the 6-week average.
 
@@ -28,8 +28,6 @@ What counts as what:
 - **Running:** runs, trail runs and treadmill runs.
 - **Strength:** `WeightTraining`, `Workout`, `Crossfit` and `HIIT`, plus anything with "ruck" in its title. Change these with `STRAVA_STRENGTH_TYPES` and `STRAVA_RUCK_WORDS` in `.env`.
 - **Total** includes everything, such as walks and swims.
-
-**The map's streets** come from OpenStreetMap. When there's a new run, the bridge asks OpenStreetMap once for the roads around it (free, no account) and draws them under your route: main roads as thin lines, side streets dotted. Set `STRAVA_MAP_STYLE=detailed` to add footpaths, parks, water and main-road names, or `off` for the route alone. If OpenStreetMap is busy, the route shows on its own and the bridge tries again on its next refresh.
 
 Hours are moving time. Relative effort is Strava's own score, so it only shows if Strava calculates it for your activities (it needs heart rate and a Strava subscription).
 
@@ -89,7 +87,6 @@ Hours are moving time. Relative effort is Strava's own score, so it only shows i
 | `STRAVA_REFRESH_MINUTES` | 15 | How often the bridge checks Strava (minimum 5) |
 | `STRAVA_STRENGTH_TYPES` | `WeightTraining,Workout,Crossfit,HIIT` | Strava sport types counted as strength |
 | `STRAVA_RUCK_WORDS` | `ruck` | Words in a title that make an activity a ruck (counted as strength) |
-| `STRAVA_MAP_STYLE` | `light` | Streets under a run's route: `light`, `detailed` or `off` |
 | `STRAVA_DEMO` | 0 | `1` shows made-up data |
 
 ## When it stops working
