@@ -460,7 +460,8 @@ def eink_logo_png(path: str, size: int, bold: bool = False) -> bytes:
     flat = Image.new("RGBA", src.size, (255, 255, 255, 255))
     flat.alpha_composite(src)
     gray = flat.convert("L")
-    bbox = gray.point(lambda v: 255 if v < 245 else 0).getbbox()
+    # Off-white backgrounds (scans, JPEGs) count as background too.
+    bbox = gray.point(lambda v: 255 if v < 225 else 0).getbbox()
     if bbox:
         gray = gray.crop(bbox)
     gray.thumbnail((size, size), Image.Resampling.LANCZOS)
@@ -564,6 +565,10 @@ def _find_file(env_name: str, *defaults: str) -> str:
 
 def _load_logo() -> dict[str, Any] | None:
     path = _find_file("LOGO_FILE", "logo.png")
+    if path and not os.path.isfile(path):
+        # logo.png missing? Accept the same name with another image extension.
+        stem = os.path.splitext(path)[0]
+        path = next((stem + ext for ext in _IMAGE_EXTS if os.path.isfile(stem + ext)), path)
     if not path:
         return None
     size = int(os.getenv("LOGO_SIZE", "220"))
