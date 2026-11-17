@@ -1,0 +1,91 @@
+<div class="view view--full">
+  <div class="dex">
+  {% render "de_header", device: trmnl.device, cfv: trmnl.plugin_settings.custom_fields_values %}
+  <div class="dex-body">
+    <div class="de">
+    {% if ok != true %}
+      {% render "de_error", error: error %}
+    {% else %}
+
+      <!-- ── Left: this billing cycle, kWh first, then dollars ─────────── -->
+      <div class="de-col" style="flex: none; width: 342px; padding: 18px 22px 14px 22px; justify-content: space-between">
+        {% if cycle %}
+        <div>
+          <div class="de-row" style="justify-content: space-between">
+            <span class="de-label">This cycle</span>
+            <span class="de-label">Day {{ cycle.day }} of {{ cycle.days }}</span>
+          </div>
+          <div class="de-big" style="font-size: 104px; margin-top: 14px">{{ cycle.kwh }}<small>kWh</small></div>
+          <div class="de-meta" style="margin-top: 8px">{{ cycle.range }} · {{ cycle.days_left }} days left</div>
+        </div>
+
+        <div>
+          {% render "de_cbar", c: cycle %}
+          <div class="de-row" style="justify-content: space-between; margin-top: 10px; gap: 8px">
+            <span class="de-meta">On pace for <b>{{ cycle.pace_kwh }}</b> kWh</span>
+            {% if cycle.last_kwh %}<span class="de-meta" style="font-size: 13px">▲ last bill {{ cycle.last_kwh }}</span>{% endif %}
+          </div>
+          {% if cycle.vs_last %}<div class="de-meta" style="margin-top: 4px; font-weight: 700">{{ cycle.vs_last }}</div>{% endif %}
+        </div>
+        {% endif %}
+
+        {% if cost %}
+        <div>
+          <div class="de-rule" style="margin-bottom: 12px"></div>
+          <div class="de-tiles">
+            <div><div class="de-label">So far</div><div class="de-num" style="font-size: 34px; margin-top: 6px">≈{{ cost.so_far }}</div></div>
+            <div><div class="de-label">Projected</div><div class="de-num" style="font-size: 34px; margin-top: 6px">≈{{ cost.projected }}</div></div>
+          </div>
+          <div class="de-meta" style="font-size: 13px; margin-top: 10px; white-space: normal; line-height: 1.25">Last bill <b>{{ cost.last }}</b>{% if cost.last_period != "" %} ({{ cost.last_period }}){% endif %}<br>Estimated at {{ cost.rate }}/kWh, last bill's average</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="de-vrule"></div>
+
+      <!-- ── Right: latest full day, then the last seven days ─────────── -->
+      <div class="de-col de-grow" style="padding: 18px 22px 12px 20px">
+        {% if day %}
+        <div style="display: flex; align-items: flex-start; gap: 12px">
+          <div class="de-grow">
+            <div class="de-row" style="gap: 10px">
+              <span class="de-label">{{ day.title }} · {{ day.label }}</span>
+              {% if day.stale or warning %}<span class="de-alert">{% if warning %}Offline{% else %}Data delayed{% endif %}</span>{% endif %}
+            </div>
+            <div class="de-big" style="font-size: 50px; margin-top: 10px">{{ day.kwh }}<small style="font-size: 0.4em">kWh</small></div>
+            <div class="de-meta" style="margin-top: 6px">{{ day.vs_avg }}</div>
+          </div>
+          {% if logo %}<img src="{{ logo.src }}" width="{{ logo.w }}" height="{{ logo.h }}" alt="" style="display: block; flex: none; margin-top: -4px; image-rendering: pixelated">{% endif %}
+        </div>
+
+        <div style="position: relative; margin-top: 28px">
+          {% assign pl = day.peak_left | plus: 0 %}
+          <div class="de-peak" style="{% if pl > 62 %}right: calc({{ 100 | minus: pl }}% - 6px){% else %}left: calc({{ pl }}% - 6px){% endif %}; top: -20px">▼ {{ day.peak_kwh }} kWh at {{ day.peak_at }}</div>
+          <div class="de-chart" style="height: 96px">
+            {% for b in day.bars %}<div class="b{% if b.peak %} pk{% endif %}" style="height: {{ b.h }}px"></div>{% endfor %}
+          </div>
+          <div class="de-axis">
+            <span style="left: 0; transform: none">12A</span><span style="left: 25%">6A</span><span style="left: 50%">NOON</span><span style="left: 75%">6P</span><span style="left: 100%; transform: translateX(-100%)">12A</span>
+          </div>
+        </div>
+        <div class="de-meta" style="font-size: 13px; margin-top: 6px">Half-hour readings · always-on about <b>{{ day.always_on }}</b></div>
+        {% endif %}
+
+        {% if week %}
+        <div class="de-rule" style="margin: 12px 0 10px"></div>
+        <div class="de-row" style="justify-content: space-between">
+          <span class="de-label">Last 7 days</span>
+          <span class="de-meta" style="font-size: 13px">avg <b>{{ week.avg }}</b> kWh/day</span>
+        </div>
+        <div class="de-week" style="height: 84px; margin-top: 4px">
+          {% for w in week.days %}<div class="wd{% if w.latest %} on{% endif %}"><div class="v">{{ w.kwh }}</div><div class="wb" style="height: {{ w.h }}px"></div></div>{% endfor %}
+        </div>
+        <div class="de-wdays">{% for w in week.days %}<span{% if w.latest %} class="on"{% endif %}>{{ w.d }}</span>{% endfor %}</div>
+        {% endif %}
+      </div>
+
+    {% endif %}
+    </div>
+  </div>
+  </div>
+</div>

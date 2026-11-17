@@ -8,3 +8,7 @@ polestar/images/*
 !polestar/images/cars/
 polestar/images/cars/*
 !polestar/images/cars/.gitkeep
+
+# The logo for the home energy screen stays on the Pi, out of git.
+dominion/images/*
+!dominion/images/README.md

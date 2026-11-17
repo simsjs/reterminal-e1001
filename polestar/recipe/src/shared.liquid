@@ -104,7 +104,7 @@
 
 {% template ps_logo %}<div style="flex: none; width: {{ logo.size | plus: 10 }}px; display: flex; align-items: center; justify-content: center"><img src="{{ logo.src }}" width="{{ logo.size }}" height="{{ logo.size }}" alt="" style="display: block; image-rendering: pixelated"></div>{% endtemplate %}
 
-{% template ps_header %}{% assign pn = cfv.page_number | default: 3 | plus: 0 %}{% assign pc = cfv.page_count | default: 3 | plus: 0 %}{% if pc < pn %}{% assign pc = pn %}{% endif %}{% assign batt = device.percent_charged | default: 0 | round %}{% assign fill = batt | times: 20 | divided_by: 100 | round %}{% comment %} LaraPaper reports Wi-Fi as bars, 0-3. {% endcomment %}{% assign ws = device.wifi_strength | default: 3 %}{% if ws >= 3 %}{% assign wc = "wifi-3" %}{% elsif ws == 2 %}{% assign wc = "wifi-2" %}{% else %}{% assign wc = "wifi-1" %}{% endif %}
+{% template ps_header %}{% assign pn = cfv.page_number | default: 3 | plus: 0 %}{% assign pc = cfv.page_count | default: 4 | plus: 0 %}{% if pc < pn %}{% assign pc = pn %}{% endif %}{% assign batt = device.percent_charged | default: 0 | round %}{% assign fill = batt | times: 20 | divided_by: 100 | round %}{% comment %} LaraPaper reports Wi-Fi as bars, 0-3. {% endcomment %}{% assign ws = device.wifi_strength | default: 3 %}{% if ws >= 3 %}{% assign wc = "wifi-3" %}{% elsif ws == 2 %}{% assign wc = "wifi-2" %}{% else %}{% assign wc = "wifi-1" %}{% endif %}
 <div class="ps-hdr">
   <div class="dots">{% for i in (1..pc) %}<div class="dot{% if i == pn %} on{% endif %}"></div>{% endfor %}</div>
   <div class="hdr-title">POLESTAR STATUS</div>

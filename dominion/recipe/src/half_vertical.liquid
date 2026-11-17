@@ -1,0 +1,33 @@
+<div class="view view--half_vertical">
+  <div class="layout" style="padding: 0">
+    <div class="de" style="flex-direction: column; padding: 14px 18px 10px; gap: 12px">
+    {% if ok != true %}
+      {% render "de_error", error: error %}
+    {% else %}
+      {% if cycle %}
+      <div class="de-row" style="justify-content: space-between"><span class="de-label">This cycle</span><span class="de-label">Day {{ cycle.day }} of {{ cycle.days }}</span></div>
+      <div class="de-big" style="font-size: 84px">{{ cycle.kwh }}<small>kWh</small></div>
+      {% render "de_cbar", c: cycle %}
+      <div class="de-meta">On pace for <b>{{ cycle.pace_kwh }}</b> kWh</div>
+      {% if cycle.vs_last %}<div class="de-meta" style="font-weight: 700">{{ cycle.vs_last }}</div>{% endif %}
+      {% endif %}
+      {% if cost %}
+      <div class="de-rule"></div>
+      <div class="de-tiles">
+        <div><div class="de-label">So far</div><div class="de-num" style="font-size: 30px; margin-top: 6px">≈{{ cost.so_far }}</div></div>
+        <div><div class="de-label">Projected</div><div class="de-num" style="font-size: 30px; margin-top: 6px">≈{{ cost.projected }}</div></div>
+      </div>
+      {% endif %}
+      {% if day %}
+      <div class="de-rule"></div>
+      <div class="de-label">{{ day.title }}</div>
+      <div class="de-row" style="gap: 10px"><div class="de-big" style="font-size: 44px">{{ day.kwh }}<small style="font-size: 0.4em">kWh</small></div><div class="de-meta" style="font-size: 13px">{{ day.vs_avg }}</div></div>
+      {% endif %}
+    {% endif %}
+    </div>
+  </div>
+  <div class="title_bar">
+    <span class="title">Home Energy</span>
+    <span class="instance">{% if data_through %}through {{ data_through }}{% endif %}</span>
+  </div>
+</div>

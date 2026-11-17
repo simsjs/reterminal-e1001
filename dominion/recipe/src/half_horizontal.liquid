@@ -1,0 +1,33 @@
+<div class="view view--half_horizontal">
+  <div class="layout" style="padding: 0">
+    <div class="de" style="padding: 12px 20px 8px; gap: 20px">
+    {% if ok != true %}
+      {% render "de_error", error: error %}
+    {% else %}
+      {% if cycle %}
+      <div class="de-col" style="flex: none; width: 300px; justify-content: space-between">
+        <div class="de-row" style="justify-content: space-between"><span class="de-label">This cycle</span><span class="de-label">Day {{ cycle.day }}/{{ cycle.days }}</span></div>
+        <div class="de-big" style="font-size: 72px">{{ cycle.kwh }}<small>kWh</small></div>
+        {% render "de_cbar", c: cycle %}
+        <div class="de-meta" style="font-size: 14px">Pace <b>{{ cycle.pace_kwh }}</b> kWh{% if cost %} · ≈<b>{{ cost.projected }}</b>{% endif %}</div>
+      </div>
+      <div class="de-vrule"></div>
+      {% endif %}
+      {% if day %}
+      <div class="de-col de-grow" style="justify-content: space-between">
+        <div class="de-row" style="justify-content: space-between; gap: 10px">
+          <span class="de-label">{{ day.title }} · <b>{{ day.kwh }} kWh</b></span>
+          <span class="de-meta" style="font-size: 13px">{{ day.vs_avg }}</span>
+        </div>
+        <div class="de-chart" style="height: 96px; margin-top: 8px">{% for b in day.bars %}<div class="b{% if b.peak %} pk{% endif %}" style="height: {{ b.h }}px"></div>{% endfor %}</div>
+        <div class="de-axis"><span style="left: 0; transform: none">12A</span><span style="left: 25%">6A</span><span style="left: 50%">NOON</span><span style="left: 75%">6P</span><span style="left: 100%; transform: translateX(-100%)">12A</span></div>
+      </div>
+      {% endif %}
+    {% endif %}
+    </div>
+  </div>
+  <div class="title_bar">
+    <span class="title">Home Energy</span>
+    <span class="instance">{% if data_through %}through {{ data_through }}{% endif %}</span>
+  </div>
+</div>
