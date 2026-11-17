@@ -83,7 +83,7 @@ RUNNING_TYPES = {"Run", "TrailRun", "VirtualRun"}
 FOOT_TYPES = {"Walk", "Hike"}
 
 # Pixel sizes the recipe draws with (full layout). Kept here so the template stays simple.
-WEEK_BAR_H = 36   # tallest weekly bar
+WEEK_BAR_H = 26   # tallest weekly bar (its value label sits above it)
 LAP_CHART_H = 96  # lap power chart
 HR_CHART_W, HR_CHART_H = 426, 150
 MAP_W, MAP_H = 280, 230
@@ -444,7 +444,10 @@ def build_weeks(acts: list[dict[str, Any]], now: datetime) -> dict[str, Any]:
                 "name": name,
                 "now": f"{vals[-1]:.1f}",
                 "avg": f"{avg:.1f}",
-                "bars": [{"h": round(v / top * WEEK_BAR_H), "now": i == len(vals) - 1} for i, v in enumerate(vals)],
+                "bars": [
+                    {"h": round(v / top * WEEK_BAR_H), "v": f"{v:.1f}" if v >= 0.05 else "", "now": i == len(vals) - 1}
+                    for i, v in enumerate(vals)
+                ],
             }
         )
     eff = [effort[w] for w in weeks]

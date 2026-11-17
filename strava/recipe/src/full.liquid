@@ -85,7 +85,7 @@
             <span class="fx-wk-now">{{ r.now }}<small>h</small></span>
             <span class="fx-wk-avg">{{ r.avg }}</span>
           </div>
-          <div class="fx-wk-bars">{% for b in r.bars %}<div style="height: {{ weeks.bar_h }}px">{% if b.h > 0 %}<div class="b{% if b.now %} now{% endif %}" style="height: {{ b.h }}px"></div>{% endif %}</div>{% endfor %}</div>
+          <div class="fx-wk-bars">{% for b in r.bars %}<div style="height: {{ weeks.bar_h | plus: 12 }}px">{% if b.v != "" %}<span class="v">{{ b.v }}</span>{% endif %}{% if b.h > 0 %}<div class="b{% if b.now %} now{% endif %}" style="height: {{ b.h }}px"></div>{% endif %}</div>{% endfor %}</div>
         </div>
         {% endfor %}
         <div class="fx-wk-labels">{% for l in weeks.labels %}<span{% if forloop.last %} class="on"{% endif %}>{{ l }}</span>{% endfor %}</div>
