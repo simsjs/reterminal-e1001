@@ -1,4 +1,4 @@
-# LaraPaper (TRMNL server) + the kitchen board and Polestar screens, on the Raspberry Pi.
+# LaraPaper (TRMNL server) + the kitchen board, Polestar and home energy screens, on the Raspberry Pi.
 #
 #   cd ~/reterminal-e1001/larapaper
 #   cp .env.example .env   # then fill it in
@@ -36,7 +36,7 @@ services:
       - CALENDAR_ICS_URLS=${CALENDAR_ICS_URLS:-}
       - BRIEF_ONLY_ICS_URLS=${BRIEF_ONLY_ICS_URLS:-}
       - FONT_BASE_URL=${FONT_BASE_URL:-http://kitchen-board:8080}
-      - PAGE_COUNT=${KB_PAGE_COUNT:-3}   # header dots: 2 kitchen screens + Polestar
+      - PAGE_COUNT=${KB_PAGE_COUNT:-4}   # header dots: 2 kitchen screens + Polestar + home energy
     volumes:
       # A folder mount, so edits to content.yml show up after a git pull.
       - ../kitchen-board/content:/app/content:ro
@@ -61,6 +61,25 @@ services:
       # Your own images (not in git): logo.png and a cars/ folder of car pictures.
       - ../polestar/images:/app/images:ro
 
+  dominion-bridge:
+    build: ../dominion/bridge
+    restart: unless-stopped
+    ports:
+      - "4570:8765"   # raw data: http://<pi-ip>:4570/dominion.json?token=<DOMINION_BRIDGE_TOKEN>
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - BRIDGE_TOKEN=${DOMINION_BRIDGE_TOKEN:-}
+      - DOMINION_ACCOUNT=${DOMINION_ACCOUNT:-}
+      - DOMINION_METER=${DOMINION_METER:-}
+      - REFRESH_MINUTES=${DOMINION_REFRESH_MINUTES:-120}
+      - DEMO=${DOMINION_DEMO:-0}
+      - LOGO_FILE=/app/images/logo.png
+    volumes:
+      # Tokens and login cookies from the one-time `dompower login` (see dominion/README.md).
+      - dominion:/data
+      - ../dominion/images:/app/images:ro
+
 volumes:
   database:
   storage:
+  dominion:

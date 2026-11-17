@@ -46,7 +46,7 @@ Polestar has no public API, so `bridge/` runs a small Python service (`polestar-
    - **Bridge URL:** `http://polestar-bridge:8765`
    - **Bridge token:** the same value as `POLESTAR_BRIDGE_TOKEN`
    - **Units:** Miles
-   - **Page dot / Total pages:** 3 and 3 (the defaults)
+   - **Page dot / Total pages:** 3 and 4 (the defaults; 4 counts the home energy screen)
 
 5. **Add it to a playlist.** On the E1001's device page, add *Polestar* to the **Day** playlist next to *Kitchen · This Week*. The screen will then alternate between the two on each refresh.
 

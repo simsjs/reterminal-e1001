@@ -1,0 +1,18 @@
+<div class="view view--quadrant">
+  <div class="layout" style="padding: 0">
+    <div class="de" style="flex-direction: column; justify-content: space-evenly; padding: 8px 16px 6px">
+    {% if ok != true or cycle == nil %}
+      <div class="de-empty"><div class="de-num" style="font-size: 22px">No Dominion data</div></div>
+    {% else %}
+      <div class="de-row" style="justify-content: space-between"><span class="de-label">This cycle</span><span class="de-label">{{ cycle.day }}/{{ cycle.days }}</span></div>
+      <div class="de-big" style="font-size: 60px">{{ cycle.kwh }}<small>kWh</small></div>
+      {% render "de_cbar", c: cycle %}
+      <div class="de-meta" style="font-size: 14px">Pace <b>{{ cycle.pace_kwh }}</b> kWh{% if cost %} · ≈<b>{{ cost.projected }}</b>{% endif %}</div>
+    {% endif %}
+    </div>
+  </div>
+  <div class="title_bar">
+    <span class="title">Home Energy</span>
+    <span class="instance">{% if day %}{{ day.kwh }} kWh yesterday{% endif %}</span>
+  </div>
+</div>

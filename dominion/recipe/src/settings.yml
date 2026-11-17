@@ -1,0 +1,43 @@
+---
+name: Home Energy
+id: 7c2f4e1a-9b3d-4c8e-a1f6-3d5e8b2c9a47
+strategy: polling
+polling_verb: get
+polling_url: "{{ bridge_url }}/dominion.json"
+polling_headers: authorization=Bearer {{ bridge_token }}
+polling_body: ''
+refresh_interval: 60
+no_screen_padding: 'no'
+dark_mode: 'no'
+static_data: ''
+framework_version: latest
+custom_fields:
+- keyname: about
+  field_type: author_bio
+  name: About
+  description: This billing cycle's kWh and estimated cost, yesterday's half-hour usage and the last 7 days, from your Dominion Energy smart meter. Needs the small dominion-bridge service running on your network (see dominion/README.md).
+- keyname: bridge_url
+  field_type: url
+  name: Bridge URL
+  description: Where dominion-bridge is running, without a trailing slash. In this repo's Docker setup it's http://dominion-bridge:8765.
+  placeholder: http://dominion-bridge:8765
+  default: http://dominion-bridge:8765
+- keyname: bridge_token
+  field_type: password
+  name: Bridge token
+  description: The DOMINION_BRIDGE_TOKEN value from larapaper/.env.
+- keyname: page_number
+  field_type: number
+  name: Page dot
+  description: Which header dot is filled for this screen (kitchen screens are 1 and 2, Polestar is 3).
+  default: 4
+- keyname: page_count
+  field_type: number
+  name: Total pages
+  description: How many dots the header shows.
+  default: 4
+- keyname: font_base
+  field_type: url
+  name: Header font source
+  description: Where the header font is loaded from. The kitchen-board container serves it.
+  default: http://kitchen-board:8080

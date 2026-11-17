@@ -42,7 +42,7 @@ custom_fields:
   field_type: number
   name: Total pages
   description: How many dots the header shows.
-  default: 3
+  default: 4
 - keyname: font_base
   field_type: url
   name: Header font source

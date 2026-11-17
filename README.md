@@ -2,7 +2,8 @@
 
 Screens for a Seeed reTerminal E1001 running TRMNL firmware, served by
 [LaraPaper](https://github.com/usetrmnl/larapaper) on a Raspberry Pi: two kitchen
-screens, plus a Polestar status screen (see [`polestar/`](polestar/README.md)).
+screens, plus a Polestar status screen (see [`polestar/`](polestar/README.md)) and a
+home energy screen for Dominion Energy (see [`dominion/`](dominion/README.md)).
 
 | Time | Screen |
 | --- | --- |
@@ -21,11 +22,14 @@ screens, plus a Polestar status screen (see [`polestar/`](polestar/README.md)).
   private iCal links, and reads tiles and reminders from `content/content.yml`.
   It renders the HTML for both screens and serves it as JSON at `/api/brief`
   and `/api/week`.
-- `larapaper/docker-compose.yml` runs LaraPaper, the kitchen board and the
-  Polestar bridge together.
+- `larapaper/docker-compose.yml` runs LaraPaper, the kitchen board, the
+  Polestar bridge and the Dominion bridge together.
 - `polestar/` holds the Polestar status screen: a small bridge service that
   reads both cars from Polestar, and its LaraPaper recipe. Setup is in
   [`polestar/README.md`](polestar/README.md).
+- `dominion/` holds the home energy screen: a small bridge that reads your
+  Dominion Energy smart-meter data, and its LaraPaper recipe. Setup is in
+  [`dominion/README.md`](dominion/README.md).
 - In LaraPaper, one recipe per screen polls that JSON. The markup in
   `recipes/kitchen-board.liquid` fills in battery, Wi-Fi and onboard-sensor
   values. LaraPaper's playlists and sleep mode handle the schedule.
