@@ -8,9 +8,11 @@ A browser tab opens. Sign in with the Google account whose Tasks you want on the
 screen and allow read-only access to Tasks. The script then prints three lines
 to paste into larapaper/.env on the Pi. Only Python's standard library is used.
 
-PORT (default 8799) is the local port Google sends you back to after sign-in.
-Pick another if it's in use. When running this on the Pi over SSH, forward the
-same port from your laptop: ssh -L 8799:127.0.0.1:8799 you@pi
+Over SSH (e.g. on the Pi), it prints a link to open in your laptop's browser.
+After you allow access, the browser lands on an error page; paste that page's
+address back into the terminal. No port forwarding is needed.
+
+PORT (default 8799) is only the address Google sends the browser back to.
 """
 import http.server
 import json
@@ -58,20 +60,35 @@ def main() -> None:
         def log_message(self, *args):
             pass
 
-    try:
-        server = http.server.HTTPServer(("127.0.0.1", port), Handler)
-    except OSError:
-        sys.exit(f"Port {port} is already in use. Add a different port number to the end "
-                 f"of the command (e.g. {port + 1}), and if you're on SSH, reconnect with "
-                 f"-L {port + 1}:127.0.0.1:{port + 1}.")
-    if os.environ.get("SSH_CONNECTION"):
-        print("Open this link in your laptop's browser to sign in:\n\n" + url + "\n")
+    def paste_mode() -> None:
+        print("1. Open this link in a browser (your laptop is fine) and sign in:\n\n" + url + "\n")
+        print("2. After you click Allow, the browser shows an error page such as")
+        print("   \"This site can't be reached\". That's expected.")
+        print("3. Copy the whole address from the browser's address bar (it starts with")
+        print(f"   http://127.0.0.1:{port}/?state=... and contains code=...) and paste it here.\n")
+        while "code" not in result and "error" not in result:
+            pasted = input("Address: ").strip()
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(pasted).query)
+            if "code" in q or "error" in q:
+                result.update({k: v[0] for k, v in q.items()})
+            else:
+                print("That address has no code= in it. Copy the full address and try again.")
+
+    server = None
+    if not os.environ.get("SSH_CONNECTION"):
+        try:
+            server = http.server.HTTPServer(("127.0.0.1", port), Handler)
+        except OSError:
+            server = None
+    if server is None:
+        # Over SSH, or the port is taken: no local listener, paste the address instead.
+        paste_mode()
     else:
         print("Opening your browser to sign in. If it doesn't open, visit:\n\n" + url + "\n")
         webbrowser.open(url)
-    while "code" not in result and "error" not in result:
-        server.handle_request()
-    server.server_close()
+        while "code" not in result and "error" not in result:
+            server.handle_request()
+        server.server_close()
 
     if "error" in result:
         sys.exit(f"Google returned an error: {result['error']}")
