@@ -102,6 +102,7 @@ services:
       - RUCK_WORDS=${STRAVA_RUCK_WORDS:-ruck}
       - DEMO=${STRAVA_DEMO:-0}
       - DEMO_LAYOUT=${STRAVA_DEMO_LAYOUT:-ride}
+      - MAP_STYLE=${STRAVA_MAP_STYLE:-light}
     volumes:
       # The newest Strava refresh token (Strava can hand out a new one on any refresh).
       - strava:/data
