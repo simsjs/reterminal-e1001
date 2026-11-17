@@ -1,0 +1,17 @@
+<div class="view view--quadrant">
+  <div class="layout" style="padding: 0">
+    <div class="fx fx-col" style="justify-content: space-evenly; padding: 8px 16px 6px">
+    {% if ok != true or last == nil %}
+      <div class="fx-empty"><div style="font-size: 22px; font-weight: 700">No Strava data</div></div>
+    {% else %}
+      <span class="fx-label">{{ last.label }}</span>
+      <div class="fx-title" style="font-size: 20px">{{ last.title }}</div>
+      <div class="fx-row" style="gap: 14px">{% for t in last.tiles limit: 2 %}<span style="font-size: 30px; font-weight: 800">{{ t.big }}<small style="font-size: 13px; margin-left: 3px">{{ t.unit }}</small></span>{% endfor %}</div>
+    {% endif %}
+    </div>
+  </div>
+  <div class="title_bar">
+    <span class="title">Fitness</span>
+    <span class="instance">{% if weeks %}{{ weeks.rows[0].now }} h this week{% endif %}</span>
+  </div>
+</div>

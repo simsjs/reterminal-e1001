@@ -1,0 +1,43 @@
+---
+name: Fitness
+id: 3e8b5d27-6c41-4f0a-9d2e-81b7c4a6f053
+strategy: polling
+polling_verb: get
+polling_url: "{{ bridge_url }}/fitness.json"
+polling_headers: authorization=Bearer {{ bridge_token }}
+polling_body: ''
+refresh_interval: 15
+no_screen_padding: 'no'
+dark_mode: 'no'
+static_data: ''
+framework_version: latest
+custom_fields:
+- keyname: about
+  field_type: author_bio
+  name: About
+  description: Your latest Strava activity (a Zwift ride, a run with its map, or a strength session), hours per week for cycling, running and strength, and this week's relative effort. Needs the small strava-bridge service running on your network (see strava/README.md).
+- keyname: bridge_url
+  field_type: url
+  name: Bridge URL
+  description: Where strava-bridge is running, without a trailing slash. In this repo's Docker setup it's http://strava-bridge:8765.
+  placeholder: http://strava-bridge:8765
+  default: http://strava-bridge:8765
+- keyname: bridge_token
+  field_type: password
+  name: Bridge token
+  description: The STRAVA_BRIDGE_TOKEN value from larapaper/.env.
+- keyname: page_number
+  field_type: number
+  name: Page dot
+  description: Which header dot is filled for this screen (This Week is 1, Polestar is 2, home energy is 3).
+  default: 4
+- keyname: page_count
+  field_type: number
+  name: Total pages
+  description: How many dots the header shows.
+  default: 4
+- keyname: font_base
+  field_type: url
+  name: Header font source
+  description: Where the header font is loaded from. The kitchen-board container serves it.
+  default: http://kitchen-board:8080

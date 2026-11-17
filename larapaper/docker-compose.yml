@@ -1,4 +1,4 @@
-# LaraPaper (TRMNL server) + the calendar screens, Polestar and home energy screens, on the Raspberry Pi.
+# LaraPaper (TRMNL server) + the calendar screens, Polestar, home energy and fitness screens, on the Raspberry Pi.
 #
 #   cd ~/reterminal-e1001/larapaper
 #   cp .env.example .env   # then fill it in
@@ -43,7 +43,7 @@ services:
       - TASKS_INCLUDE_UNDATED=${TASKS_INCLUDE_UNDATED:-off}
       - BRIEF_ENABLED=${BRIEF_ENABLED:-off}
       - FONT_BASE_URL=${FONT_BASE_URL:-http://kitchen-board:8080}
-      - PAGE_COUNT=${KB_PAGE_COUNT:-3}   # header dots: This Week + Polestar + home energy
+      - PAGE_COUNT=${KB_PAGE_COUNT:-4}   # header dots: This Week + Polestar + home energy + fitness
     volumes:
       # A folder mount, so edits to content.yml show up after a git pull.
       - ../kitchen-board/content:/app/content:ro
@@ -86,7 +86,28 @@ services:
       - dominion:/data
       - ../dominion/images:/app/images:ro
 
+  strava-bridge:
+    build: ../strava/bridge
+    restart: unless-stopped
+    ports:
+      - "4571:8765"   # raw data: http://<pi-ip>:4571/fitness.json?token=<STRAVA_BRIDGE_TOKEN>
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - BRIDGE_TOKEN=${STRAVA_BRIDGE_TOKEN:-}
+      - STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID:-}
+      - STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET:-}
+      - STRAVA_REFRESH_TOKEN=${STRAVA_REFRESH_TOKEN:-}
+      - REFRESH_MINUTES=${STRAVA_REFRESH_MINUTES:-15}
+      - STRENGTH_TYPES=${STRAVA_STRENGTH_TYPES:-WeightTraining,Workout,Crossfit,HIIT}
+      - RUCK_WORDS=${STRAVA_RUCK_WORDS:-ruck}
+      - DEMO=${STRAVA_DEMO:-0}
+      - DEMO_LAYOUT=${STRAVA_DEMO_LAYOUT:-ride}
+    volumes:
+      # The newest Strava refresh token (Strava can hand out a new one on any refresh).
+      - strava:/data
+
 volumes:
   database:
   storage:
   dominion:
+  strava:

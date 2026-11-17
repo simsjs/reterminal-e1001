@@ -1,0 +1,19 @@
+<div class="view view--half_horizontal">
+  <div class="layout" style="padding: 0">
+    <div class="fx" style="padding: 12px 20px 8px; gap: 20px">
+    {% if ok != true or last == nil %}
+      {% render "fx_error", error: error %}
+    {% else %}
+      <div class="fx-col fx-grow" style="gap: 8px; justify-content: space-between">
+        <div class="fx-row" style="justify-content: space-between; gap: 10px"><span class="fx-label">{{ last.label }}</span><span class="fx-label">{{ last.corner }}</span></div>
+        <div class="fx-title" style="font-size: 22px">{{ last.title }}</div>
+        {% render "fx_tiles", tiles: last.tiles %}
+      </div>
+    {% endif %}
+    </div>
+  </div>
+  <div class="title_bar">
+    <span class="title">Fitness</span>
+    <span class="instance">{% if weeks %}{{ weeks.rows[0].now }} h this week{% endif %}</span>
+  </div>
+</div>

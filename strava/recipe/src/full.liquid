@@ -1,0 +1,104 @@
+<div class="view view--full">
+  <div class="fxx">
+  {% render "fx_header", device: trmnl.device, cfv: trmnl.plugin_settings.custom_fields_values, as_of: as_of %}
+  <div class="fxx-body">
+    <div class="fx">
+    {% if ok != true %}
+      {% render "fx_error", error: error %}
+    {% else %}
+
+      <!-- ── Left: the latest activity (ride, route or effort layout) ─────── -->
+      <div class="fx-col fx-left">
+        {% if last %}
+        <div class="fx-row" style="justify-content: space-between; gap: 10px">
+          <span class="fx-label">{{ last.label }}</span>
+          {% if warning %}<span class="fx-alert">Offline</span>{% else %}<span class="fx-label">{{ last.corner }}</span>{% endif %}
+        </div>
+        <div style="min-width: 0">
+          <div class="fx-title">{{ last.title }}</div>
+          <div class="fx-sub">{{ last.sub }}</div>
+        </div>
+        {% render "fx_tiles", tiles: last.tiles %}
+
+        {% if last.kind == "route" %}
+        <div class="fx-grow" style="display: flex; gap: 16px; min-height: 0">
+          {% if last.map %}{% assign m = last.map %}
+          <div class="fx-map fx-grow">
+            <svg viewBox="0 0 {{ m.w }} {{ m.h }}" preserveAspectRatio="xMidYMid meet">
+              <path d="M10 8v5h{{ m.scale_px }}v-5" fill="none" stroke="#000" stroke-width="2"/>
+              <text x="{{ m.scale_px | plus: 16 }}" y="15" font-family="KB Mono, Courier New, monospace" font-size="11" font-weight="700">{{ m.scale_label }}</text>
+              <path d="{{ m.path }}" fill="none" stroke="#000" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+              <circle cx="{{ m.start.x }}" cy="{{ m.start.y }}" r="7" fill="#000" stroke="#fff" stroke-width="2"/>
+              <rect x="{{ m.end.x }}" y="{{ m.end.y }}" width="11" height="11" fill="#fff" stroke="#000" stroke-width="3"/>
+            </svg>
+            <div class="fx-mono" style="position: absolute; right: 8px; top: 6px; font-size: 10px; font-weight: 700">● START &nbsp;■ FINISH</div>
+          </div>
+          {% endif %}
+          <div class="fx-col" style="flex: none; width: 112px; gap: 6px">
+            {% if last.splits.size > 0 %}<span class="fx-label">Splits</span>{% endif %}
+            {% for s in last.splits %}<div class="fx-split"><span>{{ s.label }}</span><b>{{ s.value }}</b></div>{% endfor %}
+            <div style="font-size: 13px; font-weight: 600; margin-top: auto; line-height: 1.3">
+              {% for n in last.notes %}{{ n.t }}{% if n.v %} <b>{{ n.v }}</b>{% endif %}{% unless forloop.last %}<br>{% endunless %}{% endfor %}
+            </div>
+          </div>
+        </div>
+
+        {% else %}
+        {% if last.extras.size > 0 %}
+        <div class="fx-extras">{% for e in last.extras %}<span>{% if e.b %}<b style="font-weight: 800">{{ e.t }}</b>{% else %}{{ e.t }}{% endif %}{% if e.v %}<b style="font-weight: 800">{{ e.v }}</b>{% endif %}</span>{% endfor %}</div>
+        {% endif %}
+
+        {% if last.best %}
+        <div class="fx-col" style="border-top: 2px solid #000; padding-top: 8px; gap: 6px">
+          <span class="fx-label">Best power</span>
+          <div class="fx-best">{% for b in last.best %}<div><div class="k">{{ b.label }}</div><div class="v">{{ b.value }}<small>{{ b.unit }}</small></div></div>{% endfor %}</div>
+        </div>
+        {% endif %}
+
+        {% if last.laps %}
+        <div class="fx-col" style="margin-top: auto; gap: 4px">
+          <div class="fx-row" style="justify-content: space-between"><span class="fx-label">Workout · lap power</span><span style="font-size: 13px; font-weight: 700">▲ {{ last.laps.peak }}</span></div>
+          <div class="fx-laps" style="height: {{ last.laps.h }}px">{% for l in last.laps.bars %}<div style="flex: {{ l.s }} 1 0; height: {{ l.pct }}%"></div>{% endfor %}</div>
+        </div>
+        {% elsif last.hr %}
+          {% render "fx_hr", hr: last.hr %}
+        {% endif %}
+        {% endif %}
+        {% else %}
+          <div class="fx-empty"><div style="font-size: 24px; font-weight: 700">No activities in the last 7 weeks</div></div>
+        {% endif %}
+      </div>
+
+      <div class="fx-vrule"></div>
+
+      <!-- ── Right: hours per week and relative effort ─────────────────── -->
+      <div class="fx-col fx-right">
+        <div class="fx-row" style="justify-content: space-between">
+          <span class="fx-label">Hours per week</span>
+          <span style="font-size: 13px; font-weight: 600">this wk · 6-wk avg</span>
+        </div>
+        {% for r in weeks.rows %}
+        <div class="fx-wk">
+          <div class="fx-wk-head">
+            {% render "fx_icon", name: r.key %}
+            <span class="fx-wk-name">{{ r.name }}</span>
+            <span class="fx-wk-now">{{ r.now }}<small>h</small></span>
+            <span class="fx-wk-avg">{{ r.avg }}</span>
+          </div>
+          <div class="fx-wk-bars">{% for b in r.bars %}<div style="height: {{ weeks.bar_h }}px">{% if b.h > 0 %}<div class="b{% if b.now %} now{% endif %}" style="height: {{ b.h }}px"></div>{% endif %}</div>{% endfor %}</div>
+        </div>
+        {% endfor %}
+        <div class="fx-wk-labels">{% for l in weeks.labels %}<span{% if forloop.last %} class="on"{% endif %}>{{ l }}</span>{% endfor %}</div>
+        {% if weeks.effort %}
+        <div class="fx-pill">
+          <span class="fx-label">Rel. effort</span>
+          <span style="font-size: 14px; font-weight: 600; white-space: nowrap"><b>{{ weeks.effort.now }}</b> · <b>{{ weeks.effort.avg }}</b> avg</span>
+        </div>
+        {% endif %}
+      </div>
+
+    {% endif %}
+    </div>
+  </div>
+  </div>
+</div>

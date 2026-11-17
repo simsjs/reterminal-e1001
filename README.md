@@ -2,8 +2,9 @@
 
 Screens for a Seeed reTerminal E1001 running TRMNL firmware, served by
 [LaraPaper](https://github.com/usetrmnl/larapaper) on a Raspberry Pi: two calendar
-screens (This Week, plus Morning Brief, which is paused for now), plus a Polestar status screen (see [`polestar/`](polestar/README.md)) and a
-home energy screen for Dominion Energy (see [`dominion/`](dominion/README.md)).
+screens (This Week, plus Morning Brief, which is paused for now), plus a Polestar status screen (see [`polestar/`](polestar/README.md)), a
+home energy screen for Dominion Energy (see [`dominion/`](dominion/README.md)) and a
+fitness screen from Strava (see [`strava/`](strava/README.md)).
 
 | Time | Screen |
 | --- | --- |
@@ -28,13 +29,16 @@ Morning playlist in LaraPaper.
   It renders the HTML for both screens and serves it as JSON at `/api/brief`
   and `/api/week`.
 - `larapaper/docker-compose.yml` runs LaraPaper, the calendar screens, the
-  Polestar bridge and the Dominion bridge together.
+  Polestar bridge, the Dominion bridge and the Strava bridge together.
 - `polestar/` holds the Polestar status screen: a small bridge service that
   reads both cars from Polestar, and its LaraPaper recipe. Setup is in
   [`polestar/README.md`](polestar/README.md).
 - `dominion/` holds the home energy screen: a small bridge that reads your
   Dominion Energy smart-meter data, and its LaraPaper recipe. Setup is in
   [`dominion/README.md`](dominion/README.md).
+- `strava/` holds the fitness screen: a small bridge that reads your
+  activities from the Strava API, and its LaraPaper recipe. Setup is in
+  [`strava/README.md`](strava/README.md).
 - In LaraPaper, one recipe per screen polls that JSON. The markup in
   `recipes/kitchen-board.liquid` fills in battery, Wi-Fi and onboard-sensor
   values. LaraPaper's playlists and sleep mode handle the schedule.
