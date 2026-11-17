@@ -73,7 +73,7 @@
 {% template de_header %}{% assign pn = cfv.page_number | default: 3 | plus: 0 %}{% assign pc = cfv.page_count | default: 3 | plus: 0 %}{% if pc < pn %}{% assign pc = pn %}{% endif %}{% assign batt = device.percent_charged | default: 0 | round %}{% assign fill = batt | times: 20 | divided_by: 100 | round %}{% assign ws = device.wifi_strength | default: 3 %}{% if ws >= 3 %}{% assign wc = "wifi-3" %}{% elsif ws == 2 %}{% assign wc = "wifi-2" %}{% else %}{% assign wc = "wifi-1" %}{% endif %}
 <div class="de-hdr">
   <div class="dots">{% for i in (1..pc) %}<div class="dot{% if i == pn %} on{% endif %}"></div>{% endfor %}</div>
-  <div class="hdr-title">HOME · ENERGY</div>
+  <div class="hdr-title">HOME ENERGY CONSUMPTION</div>
   <div class="hdr-right">
     <svg class="wifi {{ wc }}" viewBox="0 0 21 16"><path class="w3" d="M1.6 5.6a12.6 12.6 0 0 1 17.8 0"/><path class="w2" d="M4.6 8.7a8.3 8.3 0 0 1 11.8 0"/><circle cx="10.5" cy="13.2" r="2.1"/></svg>
     <div class="batt"><div class="batt-fill" style="width:{{ fill }}px"></div></div>

@@ -1,5 +1,5 @@
 ---
-name: Home Energy
+name: Home Energy Consumption
 id: 7c2f4e1a-9b3d-4c8e-a1f6-3d5e8b2c9a47
 strategy: polling
 polling_verb: get

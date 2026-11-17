@@ -1,6 +1,6 @@
 # Home energy screen (Dominion Energy)
 
-A full-screen LaraPaper recipe for the E1001 showing your Dominion Energy Virginia electricity use. It has the same header row as the other screens: page dots, **HOME · ENERGY**, Wi-Fi and battery.
+A full-screen LaraPaper recipe for the E1001 showing your Dominion Energy Virginia electricity use. It has the same header row as the other screens: page dots, **HOME ENERGY CONSUMPTION**, Wi-Fi and battery.
 
 ![Home energy screen](preview/full.png)
 
@@ -58,7 +58,7 @@ It checks every 2 hours and serves the result to LaraPaper as JSON. It only read
    - **Bridge token:** the same value as `DOMINION_BRIDGE_TOKEN`
    - **Page dot / Total pages:** 3 and 3 (the defaults)
 
-5. **Add it to a playlist.** On the E1001's device page, add *Home Energy* to the **Day** playlist with the other screens.
+5. **Add it to a playlist.** On the E1001's device page, add *Home Energy Consumption* to the **Day** playlist with the other screens.
 
 ## Extras
 
