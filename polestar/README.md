@@ -66,7 +66,7 @@ After changing images, run `docker compose restart polestar-bridge`.
 | `POLESTAR_VINS` | all | Limit to specific VINs, comma-separated |
 | `POLESTAR_DEMO` | 0 | `1` shows two fake cars |
 
-Image layout is set on the bridge (`PHOTO_WIDTH`, `PHOTO_ZOOM`, `PHOTO_FOCUS`, `LOGO_SIZE`). See the top of `bridge/polestar_bridge.py`.
+Image layout is set on the bridge (`PHOTO_WIDTH`, `PHOTO_ZOOM`, `PHOTO_FOCUS`, `LOGO_SIZE`, `LOGO_SMALL_SIZE`). See the top of `bridge/polestar_bridge.py`.
 
 ## Notes
 

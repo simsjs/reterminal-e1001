@@ -24,6 +24,7 @@ Environment:
     LOGO_FILE           optional image shown on the right of the panel (default: logo.png next to
                         this script, if present). Converted to crisp 1-bit for e-ink at startup.
     LOGO_SIZE           pixel size of the logo box on screen, default 220
+    LOGO_SMALL_SIZE     pixel size of the bold logo in front of each car's name, default 46
     PHOTO_FILE          optional car image(s) for the left of the two-car screen: a file, a folder, or a
                         comma-separated list (default: every image in cars/ next to this script, plus
                         car.jpg/png). With several, one is picked at random on each refresh.
@@ -444,12 +445,14 @@ def format_car(c: CarSnapshot, name: str, imperial: bool, now: datetime) -> dict
 _BAYER4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
 
 
-def eink_logo_png(path: str, size: int) -> bytes:
+def eink_logo_png(path: str, size: int, bold: bool = False) -> bytes:
     """Fit an image into a size x size box and turn it into a 1-bit PNG.
 
     Near-black stays solid, near-white stays white, and mid-tones become an even
     ordered-dither pattern so two-tone artwork still reads as two tones on e-ink.
     The result is rendered at exactly `size` px so the browser never rescales it.
+    With `bold`, every non-white pixel goes solid black and thin strokes are
+    thickened by a pixel, so a small logo stays strong next to bold text.
     """
     from PIL import Image  # only needed when a logo is configured
 
@@ -463,6 +466,14 @@ def eink_logo_png(path: str, size: int) -> bytes:
     gray.thumbnail((size, size), Image.Resampling.LANCZOS)
     canvas = Image.new("L", (size, size), 255)
     canvas.paste(gray, ((size - gray.width) // 2, (size - gray.height) // 2))
+
+    if bold:
+        from PIL import ImageFilter
+
+        solid = canvas.point(lambda v: 0 if v < 232 else 255).filter(ImageFilter.MinFilter(3))
+        buf = io.BytesIO()
+        solid.convert("1").save(buf, format="PNG", optimize=True)
+        return buf.getvalue()
 
     out = Image.new("1", (size, size), 1)
     src_px, out_px = canvas.load(), out.load()
@@ -556,9 +567,10 @@ def _load_logo() -> dict[str, Any] | None:
     if not path:
         return None
     size = int(os.getenv("LOGO_SIZE", "220"))
+    small = int(os.getenv("LOGO_SMALL_SIZE", "46"))  # the one in front of each car's name
     try:
         logo = {"src": _data_uri(eink_logo_png(path, size)), "size": size,
-                "small_src": _data_uri(eink_logo_png(path, 34)), "small_size": 34}
+                "small_src": _data_uri(eink_logo_png(path, small, bold=True)), "small_size": small}
     except Exception as exc:
         log.warning("Could not load logo %s: %s", path, exc)
         return None
