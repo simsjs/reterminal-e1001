@@ -20,6 +20,20 @@ WEATHER_LON = float(os.environ.get("WEATHER_LON", "-77.3064"))
 CALENDAR_ICS_URLS = _split(os.environ.get("CALENDAR_ICS_URLS", ""))
 BRIEF_ONLY_ICS_URLS = _split(os.environ.get("BRIEF_ONLY_ICS_URLS", ""))
 
+# Holiday countdown on This Week: Google's public "Holidays in United States"
+# calendar. Set it empty to use only the countdowns list in content.yml.
+HOLIDAYS_ICS_URL = os.environ.get(
+    "HOLIDAYS_ICS_URL",
+    "https://calendar.google.com/calendar/ical/"
+    "en.usa.official%23holiday%40group.v.calendar.google.com/public/basic.ics",
+).strip()
+# Only count down to a holiday this many days out.
+HOLIDAY_SHOW_WITHIN_DAYS = int(os.environ.get("HOLIDAY_SHOW_WITHIN_DAYS", "60") or 60)
+
+# Morning Brief is paused: it still renders at /brief for previews, but it isn't
+# counted in the header dots. Set BRIEF_ENABLED=on to bring it back.
+BRIEF_ENABLED = os.environ.get("BRIEF_ENABLED", "off").lower() in ("on", "1", "true", "yes")
+
 # Reminders on This Week come from Google Tasks (the "Tasks" entry in Google
 # Calendar). Get these three values with tools/get_tasks_token.py. Until they're
 # set, the reminders strip shows the list in content.yml.
@@ -46,9 +60,9 @@ CONTENT_PATH = os.environ.get(
 
 PORT = int(os.environ.get("PORT", "8080"))
 
-# How many page dots the header shows. Morning Brief and This Week are dots 1 and 2;
-# raise this when the playlist has more screens (e.g. 3 with the Polestar one).
-# 0 = just those two screens.
+# How many page dots the header shows. This Week is dot 1 (Morning Brief, when
+# enabled, comes first). Raise this when the playlist has more screens.
+# 0 = just the calendar screens.
 PAGE_COUNT = int(os.environ.get("PAGE_COUNT", "0") or 0)
 
 # Pin "now" for testing, e.g. NOW=2026-11-12T06:02

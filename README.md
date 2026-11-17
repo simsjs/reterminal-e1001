@@ -2,25 +2,29 @@
 
 Screens for a Seeed reTerminal E1001 running TRMNL firmware, served by
 [LaraPaper](https://github.com/usetrmnl/larapaper) on a Raspberry Pi: two calendar
-screens (Morning Brief and This Week), plus a Polestar status screen (see [`polestar/`](polestar/README.md)) and a
+screens (This Week, plus Morning Brief, which is paused for now), plus a Polestar status screen (see [`polestar/`](polestar/README.md)) and a
 home energy screen for Dominion Energy (see [`dominion/`](dominion/README.md)).
 
 | Time | Screen |
 | --- | --- |
-| 6:00–9:00 AM | **Morning brief**: date, weather, today's events, three tiles |
-| 9:00 AM–10:00 PM | **This week**: yesterday, today and the next three days, a holiday countdown, reminders |
+| 6:00 AM–10:00 PM | **This week**: yesterday, today and the next three days, a holiday countdown, reminders |
 | 10:00 PM–6:00 AM | Sleep, with no refreshes, to save battery |
 
-| Morning brief | This week |
-| --- | --- |
-| ![Morning brief](kitchen-board/preview/brief.png) | ![This week](kitchen-board/preview/week.png) |
+![This week](kitchen-board/preview/week.png)
+
+**Morning Brief** (date, weather, today's events, three tiles) is paused while
+it gets more work. It still renders at `http://<pi-ip>:4568/brief` for
+previews, but it isn't in a playlist and doesn't get a header dot. To bring it
+back, set `BRIEF_ENABLED=on` and add 1 to `KB_PAGE_COUNT` in `.env`, then add a
+Morning playlist in LaraPaper.
 
 ## How it fits together
 
 - `kitchen-board/` is a small Python service. It pulls weather from
   [Open-Meteo](https://open-meteo.com/) (no API key), reads calendars from
-  private iCal links, reminders from Google Tasks, and tiles and countdowns
-  from `content/content.yml`.
+  private iCal links, holidays from Google's public US holiday calendar,
+  reminders from Google Tasks, and tiles and personal countdowns from
+  `content/content.yml`.
   It renders the HTML for both screens and serves it as JSON at `/api/brief`
   and `/api/week`.
 - `larapaper/docker-compose.yml` runs LaraPaper, the calendar screens, the
@@ -69,9 +73,9 @@ home energy screen for Dominion Energy (see [`dominion/`](dominion/README.md)).
      language. Paste `kitchen-board/recipes/kitchen-board.liquid` as the
      full-screen markup and refresh every 15 minutes. Turn on "no screen
      padding" if that option appears.
-   - On the E1001's device page, add two playlists:
-     - **Morning**: active 06:00–09:00, containing Morning Brief.
-     - **Day**: active 09:00–22:00, containing This Week.
+   - On the E1001's device page, add a **Day** playlist, active 06:00–22:00,
+     containing This Week. (Morning Brief is paused, so skip that recipe and
+     the Morning playlist for now.)
    - Turn on **sleep mode** from 22:00 to 06:00.
    - Set the refresh rate to **900 seconds** (15 minutes).
 
@@ -127,10 +131,17 @@ Optional settings in `.env`: `TASKS_LISTS` limits which task lists are shown
 `TASKS_INCLUDE_UNDATED=on` adds tasks with no due date. Until Google Tasks is
 set up, the strip shows the `reminders:` list in `content.yml`.
 
-## Tiles and countdowns
+## Holiday countdown
 
-The Morning Brief tiles and the holiday countdowns are hand-written lists, not
-pulled from any app. Edit `kitchen-board/content/content.yml`. After a `git pull`, changes show up
+The countdown at the top right of This Week shows the next holiday within 60
+days from Google's public **Holidays in United States** calendar, so it never
+needs updating. You can add your own dates (birthdays, trips) to `countdowns:`
+in `content.yml`; whichever is sooner is shown. `HOLIDAY_SHOW_WITHIN_DAYS` in
+`.env` changes the 60-day window.
+
+## Tiles
+
+The Morning Brief tiles are a hand-written list, not pulled from any app. Edit `kitchen-board/content/content.yml`. After a `git pull`, changes show up
 on the next refresh without a rebuild.
 
 ## Updating

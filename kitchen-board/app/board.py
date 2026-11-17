@@ -19,6 +19,11 @@ _env = Environment(
 
 PAGES = ["brief", "week"]
 
+
+def _dot_pages() -> list[str]:
+    """Screens that get a header dot, in playlist order."""
+    return PAGES if config.BRIEF_ENABLED else ["week"]
+
 # Values LaraPaper fills in from the device (see recipes/*.liquid).
 PLACEHOLDER_PREVIEW = {
     "%%BATTERY%%": "86",
@@ -54,8 +59,8 @@ def clock_ampm(dt: datetime) -> str:
 def _common(page: str, n: datetime, content: dict) -> dict:
     return {
         "page": page,
-        "page_index": PAGES.index(page),
-        "page_count": max(config.PAGE_COUNT, len(PAGES)),
+        "page_index": _dot_pages().index(page) if page in _dot_pages() else -1,
+        "page_count": max(config.PAGE_COUNT, len(_dot_pages())),
         "board_name": str(content.get("board_name") or "").upper(),
         "updated": clock_ampm(n),
         "font_base": config.FONT_BASE_URL,
@@ -96,18 +101,24 @@ def build_brief(n: datetime) -> dict:
 
 
 def _countdown(content: dict, today: date) -> str:
-    best = None
+    """The nearest upcoming holiday (from the holiday calendar) or personal
+    countdown (from content.yml), whichever is sooner."""
+    candidates = []   # (days away, name)
+    window = config.HOLIDAY_SHOW_WITHIN_DAYS
+    for d, name in calendar_data.holidays(today, today + timedelta(days=window + 1)) or []:
+        candidates.append(((d - today).days, name))
     for item in content.get("countdowns") or []:
         try:
             d = item["date"] if isinstance(item["date"], date) else date.fromisoformat(str(item["date"]))
-        except (KeyError, ValueError):
+        except (KeyError, ValueError, TypeError):
             continue
         days = (d - today).days
-        if 0 <= days <= int(item.get("show_within_days", 60)) and (best is None or days < best[0]):
-            best = (days, str(item.get("name", "")).upper())
-    if best is None:
+        if 0 <= days <= int(item.get("show_within_days", window)):
+            candidates.append((days, str(item.get("name", ""))))
+    if not candidates:
         return ""
-    days, name = best
+    days, name = min(candidates, key=lambda c: c[0])
+    name = name.upper()
     if days == 0:
         return f"{name} TODAY"
     if days == 1:

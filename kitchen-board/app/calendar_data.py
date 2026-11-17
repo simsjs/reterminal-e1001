@@ -140,3 +140,24 @@ def events_between(start: date, end: date, include_brief_only: bool) -> list[Eve
             unique.append(e)
     unique.sort(key=lambda e: (e.day, e.all_day, e.start or datetime.min.replace(tzinfo=config.TZ)))
     return unique
+
+
+def holidays(start: date, end: date) -> list[tuple[date, str]] | None:
+    """(day, name) from the public holiday calendar, start <= day < end.
+
+    None if no holiday calendar is set or it has never loaded.
+    """
+    if config.SAMPLE_DATA == "on":
+        sample = [(date(2026, 11, 26), "Thanksgiving Day"), (date(2026, 12, 25), "Christmas Day"),
+                  (date(2027, 1, 1), "New Year's Day")]
+        return [(d, n) for d, n in sample if start <= d < end]
+    if not config.HOLIDAYS_ICS_URL:
+        return None
+    body = _fetch(config.HOLIDAYS_ICS_URL)
+    if body is None:
+        return None
+    try:
+        return [(e.day, e.title) for e in _from_ics(body, start, end, "holiday")]
+    except Exception as exc:
+        log.warning("holiday calendar parse failed: %s", exc)
+        return None

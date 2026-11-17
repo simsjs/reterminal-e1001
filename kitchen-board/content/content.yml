@@ -23,17 +23,8 @@ reminders:
   - Swap furnace filter
   - "RSVP: Thanksgiving dinner"
 
-# The nearest upcoming one within show_within_days appears top-right of This Week.
-countdowns:
-  - { name: Thanksgiving, date: 2026-11-26 }
-  - { name: Christmas, date: 2026-12-25 }
-  - { name: New Year's Day, date: 2027-01-01 }
-  - { name: MLK Day, date: 2027-01-18, show_within_days: 30 }
-  - { name: Valentine's Day, date: 2027-02-14, show_within_days: 30 }
-  - { name: Easter, date: 2027-03-28 }
-  - { name: Memorial Day, date: 2027-05-31 }
-  - { name: Fourth of July, date: 2027-07-04 }
-  - { name: Labor Day, date: 2027-09-06 }
-  - { name: Halloween, date: 2027-10-31, show_within_days: 30 }
-  - { name: Thanksgiving, date: 2027-11-25 }
-  - { name: Christmas, date: 2027-12-25 }
+# Holidays for the countdown on This Week come from Google's "Holidays in United
+# States" calendar. Add your own dates here (birthdays, trips); the nearest of
+# these or the next holiday is shown. show_within_days defaults to 60.
+countdowns: []
+#  - { name: Beach trip, date: 2027-07-10, show_within_days: 30 }
