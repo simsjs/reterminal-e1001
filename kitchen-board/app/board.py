@@ -54,7 +54,7 @@ def _common(page: str, n: datetime, content: dict) -> dict:
     return {
         "page": page,
         "page_index": PAGES.index(page),
-        "page_count": len(PAGES),
+        "page_count": max(config.PAGE_COUNT, len(PAGES)),
         "board_name": str(content.get("board_name", "Kitchen")).upper(),
         "updated": clock_ampm(n),
         "font_base": config.FONT_BASE_URL,

@@ -36,6 +36,7 @@ services:
       - CALENDAR_ICS_URLS=${CALENDAR_ICS_URLS:-}
       - BRIEF_ONLY_ICS_URLS=${BRIEF_ONLY_ICS_URLS:-}
       - FONT_BASE_URL=${FONT_BASE_URL:-http://kitchen-board:8080}
+      - PAGE_COUNT=${KB_PAGE_COUNT:-3}   # header dots: 2 kitchen screens + Polestar
     volumes:
       # A folder mount, so edits to content.yml show up after a git pull.
       - ../kitchen-board/content:/app/content:ro
