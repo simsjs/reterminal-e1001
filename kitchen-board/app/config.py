@@ -20,6 +20,19 @@ WEATHER_LON = float(os.environ.get("WEATHER_LON", "-77.3064"))
 CALENDAR_ICS_URLS = _split(os.environ.get("CALENDAR_ICS_URLS", ""))
 BRIEF_ONLY_ICS_URLS = _split(os.environ.get("BRIEF_ONLY_ICS_URLS", ""))
 
+# Reminders on This Week come from Google Tasks (the "Tasks" entry in Google
+# Calendar). Get these three values with tools/get_tasks_token.py. Until they're
+# set, the reminders strip shows the list in content.yml.
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "").strip()
+GOOGLE_TASKS_REFRESH_TOKEN = os.environ.get("GOOGLE_TASKS_REFRESH_TOKEN", "").strip()
+# Which task lists to read, by name (comma-separated). Empty = all lists.
+TASKS_LISTS = _split(os.environ.get("TASKS_LISTS", ""))
+# Show tasks due within this many days (overdue ones always show).
+TASKS_DAYS_AHEAD = int(os.environ.get("TASKS_DAYS_AHEAD", "7") or 7)
+# Also show tasks with no due date, after the dated ones.
+TASKS_INCLUDE_UNDATED = os.environ.get("TASKS_INCLUDE_UNDATED", "off").lower() in ("on", "1", "true", "yes")
+
 # "auto": sample events until a calendar is configured; "on": all sample data
 # (weather too); "off": never use sample data.
 SAMPLE_DATA = os.environ.get("SAMPLE_DATA", "auto").lower()

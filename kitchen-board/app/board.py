@@ -7,6 +7,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 import calendar_data
 import config
+import tasks_data
 import weather
 
 _env = Environment(
@@ -151,7 +152,12 @@ def build_week(n: datetime) -> dict:
             "items": items,
         })
 
-    reminders = [str(r) for r in (content.get("reminders") or [])][:4]
+    reminders = tasks_data.reminders(today)
+    if reminders is None:   # Google Tasks not set up: use the typed list
+        reminders = [{"title": str(r), "when": "", "overdue": False}
+                     for r in (content.get("reminders") or [])]
+    more = max(0, len(reminders) - 4)
+    reminders = reminders[:4]
     return {
         **_common("week", n, content),
         "title": "THIS WEEK",
@@ -159,6 +165,7 @@ def build_week(n: datetime) -> dict:
         "countdown": _countdown(content, today),
         "days": days,
         "reminders": reminders,
+        "reminders_more": more,
     }
 
 

@@ -19,7 +19,8 @@ home energy screen for Dominion Energy (see [`dominion/`](dominion/README.md)).
 
 - `kitchen-board/` is a small Python service. It pulls weather from
   [Open-Meteo](https://open-meteo.com/) (no API key), reads calendars from
-  private iCal links, and reads tiles and reminders from `content/content.yml`.
+  private iCal links, reminders from Google Tasks, and tiles and countdowns
+  from `content/content.yml`.
   It renders the HTML for both screens and serves it as JSON at `/api/brief`
   and `/api/week`.
 - `larapaper/docker-compose.yml` runs LaraPaper, the calendar screens, the
@@ -87,10 +88,49 @@ Put private iCal links in `larapaper/.env`, comma-separated, then run
 Until a link is set, both screens show a sample week, marked
 **SAMPLE CALENDAR** in the bottom-right corner.
 
-## Tiles, reminders and countdowns
+## Reminders from Google Tasks
 
-The Morning Brief tiles, the This Week reminders and the countdowns are
-hand-written lists, not pulled from any app. Edit `kitchen-board/content/content.yml`. After a `git pull`, changes show up
+The reminders strip on This Week shows your open Google Tasks (the "Tasks"
+entry in Google Calendar's sidebar) that are overdue or due in the next 7 days,
+soonest first, each with a day label: OVERDUE, TODAY, TMRW or the weekday.
+Tick a task off on your phone and it drops off within about 10 minutes.
+
+Google Tasks isn't a real calendar and has no iCal link, so the Pi reads it
+through the Google Tasks API. That needs a one-time setup:
+
+1. **Make a Google Cloud project.** Go to
+   [console.cloud.google.com](https://console.cloud.google.com), create a
+   project (any name, e.g. *E1001*), then open *APIs & Services → Library*,
+   search for **Google Tasks API** and click **Enable**.
+2. **Set up the consent screen.** In *APIs & Services → OAuth consent screen*
+   (called *Google Auth Platform* in newer consoles), choose **External**, fill
+   in the app name and your email, and add yourself as a test user. Then go to
+   *Audience* (or *Publishing status*) and click **Publish app** so it's
+   **In production**. Skip this and Google cancels the sign-in every 7 days.
+   You don't need to submit it for verification.
+3. **Make a client.** In *Credentials* (or *Clients*), create an **OAuth
+   client ID** of type **Desktop app**. Copy the client ID and client secret.
+4. **Sign in once, on your laptop:**
+
+   ```bash
+   python3 kitchen-board/tools/get_tasks_token.py CLIENT_ID CLIENT_SECRET
+   ```
+
+   Sign in with the account that has your Tasks. Google warns that it hasn't
+   verified the app, because it's your own. Click *Advanced → Go to E1001*,
+   then allow read-only access to Tasks. The script prints three lines.
+5. **Paste those three lines into `larapaper/.env` on the Pi**, then run
+   `docker compose up -d`.
+
+Optional settings in `.env`: `TASKS_LISTS` limits which task lists are shown
+(by name), `TASKS_DAYS_AHEAD` changes the 7-day window, and
+`TASKS_INCLUDE_UNDATED=on` adds tasks with no due date. Until Google Tasks is
+set up, the strip shows the `reminders:` list in `content.yml`.
+
+## Tiles and countdowns
+
+The Morning Brief tiles and the holiday countdowns are hand-written lists, not
+pulled from any app. Edit `kitchen-board/content/content.yml`. After a `git pull`, changes show up
 on the next refresh without a rebuild.
 
 ## Updating

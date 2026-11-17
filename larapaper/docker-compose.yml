@@ -35,6 +35,12 @@ services:
       - WEATHER_LON=${WEATHER_LON:--77.3064}
       - CALENDAR_ICS_URLS=${CALENDAR_ICS_URLS:-}
       - BRIEF_ONLY_ICS_URLS=${BRIEF_ONLY_ICS_URLS:-}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_TASKS_REFRESH_TOKEN=${GOOGLE_TASKS_REFRESH_TOKEN:-}
+      - TASKS_LISTS=${TASKS_LISTS:-}
+      - TASKS_DAYS_AHEAD=${TASKS_DAYS_AHEAD:-7}
+      - TASKS_INCLUDE_UNDATED=${TASKS_INCLUDE_UNDATED:-off}
       - FONT_BASE_URL=${FONT_BASE_URL:-http://kitchen-board:8080}
       - PAGE_COUNT=${KB_PAGE_COUNT:-4}   # header dots: Morning Brief + This Week + Polestar + home energy
     volumes:

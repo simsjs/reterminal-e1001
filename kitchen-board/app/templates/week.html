@@ -29,10 +29,12 @@
 
   {% if reminders %}
   <div class="rem">
-    <div class="rem-lbl">REMINDERS</div>
-    {% for r in reminders %}
-      {% if not loop.first %}<span class="rem-sep">·</span>{% endif %}<span class="rem-item">{{ r }}</span>
-    {% endfor %}
+    <div class="rem-lbl">REMINDERS{% if reminders_more %}<div class="rem-more">+{{ reminders_more }} MORE</div>{% endif %}</div>
+    <div class="rem-list">
+      {% for r in reminders %}
+      <div class="rem-row">{% if r.when %}<span class="rem-when{{ ' late' if r.overdue }}">{{ r.when }}</span>{% endif %}<span class="rem-item">{{ r.title }}</span></div>
+      {% endfor %}
+    </div>
   </div>
   {% endif %}
   {% if sample %}<div class="sample">SAMPLE CALENDAR</div>{% endif %}

@@ -15,8 +15,9 @@ tiles:
     value: 5 new roles
     detail: Top fit 87 / 100
 
-# Shown along the bottom of This Week (first 4). This list is the only source;
-# nothing here is pulled from a calendar or reminders app.
+# Shown along the bottom of This Week (first 4) only until Google Tasks is set
+# up (see "Reminders from Google Tasks" in the README). After that, this list
+# is ignored.
 reminders:
   - Library books due Fri
   - Swap furnace filter
