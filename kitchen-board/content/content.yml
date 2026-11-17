@@ -1,8 +1,7 @@
-# Content for the kitchen board that doesn't come from a calendar or weather.
+# Content for the Morning Brief and This Week screens that doesn't come from a
+# calendar or weather.
 # Edit, commit and push; the board picks up changes on its next refresh
 # (this folder is mounted into the container, so no rebuild is needed).
-
-board_name: Kitchen
 
 # Three tiles at the bottom of the morning brief.
 tiles:
@@ -16,13 +15,14 @@ tiles:
     value: 5 new roles
     detail: Top fit 87 / 100
 
-# Shown along the bottom of the week view (first 4).
+# Shown along the bottom of This Week (first 4). This list is the only source;
+# nothing here is pulled from a calendar or reminders app.
 reminders:
   - Library books due Fri
   - Swap furnace filter
   - "RSVP: Thanksgiving dinner"
 
-# The nearest upcoming one within show_within_days appears top-right of the week view.
+# The nearest upcoming one within show_within_days appears top-right of This Week.
 countdowns:
   - { name: Thanksgiving, date: 2026-11-26 }
   - { name: Christmas, date: 2026-12-25 }

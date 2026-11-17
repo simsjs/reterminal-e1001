@@ -1,4 +1,4 @@
-# LaraPaper (TRMNL server) + the kitchen board, Polestar and home energy screens, on the Raspberry Pi.
+# LaraPaper (TRMNL server) + the calendar screens, Polestar and home energy screens, on the Raspberry Pi.
 #
 #   cd ~/reterminal-e1001/larapaper
 #   cp .env.example .env   # then fill it in
@@ -36,7 +36,7 @@ services:
       - CALENDAR_ICS_URLS=${CALENDAR_ICS_URLS:-}
       - BRIEF_ONLY_ICS_URLS=${BRIEF_ONLY_ICS_URLS:-}
       - FONT_BASE_URL=${FONT_BASE_URL:-http://kitchen-board:8080}
-      - PAGE_COUNT=${KB_PAGE_COUNT:-4}   # header dots: 2 kitchen screens + Polestar + home energy
+      - PAGE_COUNT=${KB_PAGE_COUNT:-4}   # header dots: Morning Brief + This Week + Polestar + home energy
     volumes:
       # A folder mount, so edits to content.yml show up after a git pull.
       - ../kitchen-board/content:/app/content:ro

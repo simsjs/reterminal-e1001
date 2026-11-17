@@ -1,8 +1,8 @@
-# reTerminal E1001 kitchen board
+# reTerminal E1001 screens
 
 Screens for a Seeed reTerminal E1001 running TRMNL firmware, served by
-[LaraPaper](https://github.com/usetrmnl/larapaper) on a Raspberry Pi: two kitchen
-screens, plus a Polestar status screen (see [`polestar/`](polestar/README.md)) and a
+[LaraPaper](https://github.com/usetrmnl/larapaper) on a Raspberry Pi: two calendar
+screens (Morning Brief and This Week), plus a Polestar status screen (see [`polestar/`](polestar/README.md)) and a
 home energy screen for Dominion Energy (see [`dominion/`](dominion/README.md)).
 
 | Time | Screen |
@@ -22,7 +22,7 @@ home energy screen for Dominion Energy (see [`dominion/`](dominion/README.md)).
   private iCal links, and reads tiles and reminders from `content/content.yml`.
   It renders the HTML for both screens and serves it as JSON at `/api/brief`
   and `/api/week`.
-- `larapaper/docker-compose.yml` runs LaraPaper, the kitchen board, the
+- `larapaper/docker-compose.yml` runs LaraPaper, the calendar screens, the
   Polestar bridge and the Dominion bridge together.
 - `polestar/` holds the Polestar status screen: a small bridge service that
   reads both cars from Polestar, and its LaraPaper recipe. Setup is in
@@ -61,16 +61,16 @@ home energy screen for Dominion Energy (see [`dominion/`](dominion/README.md)).
 
      | Name | Polling URL |
      | --- | --- |
-     | Kitchen · Morning Brief | `http://kitchen-board:8080/api/brief` |
-     | Kitchen · This Week | `http://kitchen-board:8080/api/week` |
+     | Morning Brief | `http://kitchen-board:8080/api/brief` |
+     | This Week | `http://kitchen-board:8080/api/week` |
 
      For both, use the **Polling** data strategy and the **Liquid** markup
      language. Paste `kitchen-board/recipes/kitchen-board.liquid` as the
      full-screen markup and refresh every 15 minutes. Turn on "no screen
      padding" if that option appears.
    - On the E1001's device page, add two playlists:
-     - **Morning**: active 06:00–09:00, containing Kitchen · Morning Brief.
-     - **Day**: active 09:00–22:00, containing Kitchen · This Week.
+     - **Morning**: active 06:00–09:00, containing Morning Brief.
+     - **Day**: active 09:00–22:00, containing This Week.
    - Turn on **sleep mode** from 22:00 to 06:00.
    - Set the refresh rate to **900 seconds** (15 minutes).
 
@@ -89,7 +89,8 @@ Until a link is set, both screens show a sample week, marked
 
 ## Tiles, reminders and countdowns
 
-Edit `kitchen-board/content/content.yml`. After a `git pull`, changes show up
+The Morning Brief tiles, the This Week reminders and the countdowns are
+hand-written lists, not pulled from any app. Edit `kitchen-board/content/content.yml`. After a `git pull`, changes show up
 on the next refresh without a rebuild.
 
 ## Updating

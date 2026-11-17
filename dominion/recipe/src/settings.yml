@@ -29,7 +29,7 @@ custom_fields:
 - keyname: page_number
   field_type: number
   name: Page dot
-  description: Which header dot is filled for this screen (kitchen screens are 1 and 2, Polestar is 3).
+  description: Which header dot is filled for this screen (Morning Brief and This Week are 1 and 2, Polestar is 3).
   default: 4
 - keyname: page_count
   field_type: number

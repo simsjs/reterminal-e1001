@@ -1,8 +1,8 @@
 {%- comment -%}
-  Kitchen board glue for LaraPaper (Liquid).
+  Calendar screens glue for LaraPaper (Liquid).
   Use the same markup for both recipes:
-    Kitchen · Morning Brief  polling URL  http://kitchen-board:8080/api/brief
-    Kitchen · This Week      polling URL  http://kitchen-board:8080/api/week
+    Morning Brief  polling URL  http://kitchen-board:8080/api/brief
+    This Week      polling URL  http://kitchen-board:8080/api/week
   The layout comes from the kitchen-board service; this only fills in
   values LaraPaper knows about the device (battery, Wi-Fi, onboard sensor).
 {%- endcomment -%}
@@ -40,5 +40,5 @@
 {%- if src != blank -%}
 {{ src | replace: "%%BATTERY_FILL%%", fill | replace: "%%BATTERY%%", batt | replace: "%%WIFI_CLASS%%", wc | replace: "%%IN_TEMP%%", tin | replace: "%%IN_RH%%", hin }}
 {%- else -%}
-<div style="font: 22px/1.4 sans-serif; padding: 48px;">Kitchen board data isn't available. Check that the kitchen-board container is running and the polling URL is right.</div>
+<div style="font: 22px/1.4 sans-serif; padding: 48px;">Calendar data isn't available. Check that the kitchen-board container is running and the polling URL is right.</div>
 {%- endif -%}

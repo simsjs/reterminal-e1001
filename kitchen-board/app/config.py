@@ -1,4 +1,4 @@
-"""Settings for the kitchen board, read from environment variables."""
+"""Settings for the calendar screens, read from environment variables."""
 import os
 from zoneinfo import ZoneInfo
 
@@ -33,9 +33,9 @@ CONTENT_PATH = os.environ.get(
 
 PORT = int(os.environ.get("PORT", "8080"))
 
-# How many page dots the header shows. The kitchen screens are dots 1 and 2;
+# How many page dots the header shows. Morning Brief and This Week are dots 1 and 2;
 # raise this when the playlist has more screens (e.g. 3 with the Polestar one).
-# 0 = just the kitchen screens.
+# 0 = just those two screens.
 PAGE_COUNT = int(os.environ.get("PAGE_COUNT", "0") or 0)
 
 # Pin "now" for testing, e.g. NOW=2026-11-12T06:02

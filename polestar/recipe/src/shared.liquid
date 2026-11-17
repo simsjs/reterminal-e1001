@@ -1,6 +1,6 @@
 {% assign ps_font = trmnl.plugin_settings.custom_fields_values.font_base | default: "http://kitchen-board:8080" %}
 <style>
-  /* Header row: same look as the kitchen board (fonts are served by the kitchen-board container) */
+  /* Header row: same look as the calendar screens (fonts are served by the kitchen-board container) */
   @font-face { font-family: "KB Mono"; src: url("{{ ps_font }}/fonts/SpaceMono-Bold.ttf") format("truetype"); font-weight: 700; }
   .psx { position: fixed; top: 0; left: 0; z-index: 2147483647; width: 800px; height: 480px; overflow: hidden; background: #fff; color: #000; }
   .psx-body { position: absolute; top: 44px; left: 0; width: 800px; height: 436px; display: flex; }

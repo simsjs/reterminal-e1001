@@ -1,7 +1,7 @@
 {% macro header(board_name, title, page_index, page_count, updated) %}
 <div class="hdr">
   <div class="dots">{% for i in range(page_count) %}<div class="dot{{ ' on' if i == page_index }}"></div>{% endfor %}</div>
-  <div class="hdr-title">{{ board_name }} · {{ title }}</div>
+  <div class="hdr-title">{% if board_name %}{{ board_name }} · {% endif %}{{ title }}</div>
   <div class="hdr-right">
     <span>UPDATED {{ updated }}</span>
     <svg class="wifi %%WIFI_CLASS%%" viewBox="0 0 21 16"><path class="w3" d="M1.6 5.6a12.6 12.6 0 0 1 17.8 0"/><path class="w2" d="M4.6 8.7a8.3 8.3 0 0 1 11.8 0"/><circle cx="10.5" cy="13.2" r="2.1"/></svg>

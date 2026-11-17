@@ -1,6 +1,6 @@
 # Polestar status screen
 
-A full-screen LaraPaper recipe for the E1001 showing both cars (Snow and Midnight). It has the same header row as the kitchen board: page dots, **POLESTAR STATUS**, Wi-Fi and battery. Below the header, a car picture fills the left 60% of the screen. On the right, each car gets:
+A full-screen LaraPaper recipe for the E1001 showing both cars (Snow and Midnight). It has the same header row as the This Week screen: page dots, **POLESTAR STATUS**, Wi-Fi and battery. Below the header, a car picture fills the left 60% of the screen. On the right, each car gets:
 
 - charge %, range and charge limit
 - a **Charging** pill and completion time, shown only while charging
@@ -48,7 +48,7 @@ Polestar has no public API, so `bridge/` runs a small Python service (`polestar-
    - **Units:** Miles
    - **Page dot / Total pages:** 3 and 4 (the defaults; 4 counts the home energy screen)
 
-5. **Add it to a playlist.** On the E1001's device page, add *Polestar* to the **Day** playlist next to *Kitchen · This Week*. The screen will then alternate between the two on each refresh.
+5. **Add it to a playlist.** On the E1001's device page, add *Polestar* to the **Day** playlist next to *This Week*. The screen will then alternate between the two on each refresh.
 
 ## Extras
 
@@ -72,4 +72,4 @@ Image layout is set on the bridge (`PHOTO_WIDTH`, `PHOTO_ZOOM`, `PHOTO_FOCUS`, `
 
 - pypolestar is unofficial. If Polestar changes its side, the screen shows "No Polestar data yet" until the library catches up. When that happens, bump the version in `bridge/requirements.txt`.
 - Fields a car doesn't report are left off the screen. For example, older Polestar 2s may not report the charge limit or charging power.
-- The header font loads from the kitchen-board container, so both screens use the same type.
+- The header font loads from the kitchen-board container (which serves the calendar screens), so both screens use the same type.

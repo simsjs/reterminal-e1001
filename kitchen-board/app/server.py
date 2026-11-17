@@ -1,4 +1,4 @@
-"""Tiny HTTP server for the kitchen board.
+"""Tiny HTTP server for the calendar screens (Morning Brief and This Week).
 
   /api/brief, /api/week  JSON {"html": ...} that LaraPaper recipes poll
   /brief, /week          full pages to preview in a browser
@@ -64,7 +64,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, b"ok", "text/plain")
             elif path == "/":
                 links = '<p><a href="/brief">brief</a> · <a href="/week">week</a></p>'
-                self._send(200, PREVIEW_SHELL.format(title="kitchen board", body=links).encode(),
+                self._send(200, PREVIEW_SHELL.format(title="calendar screens", body=links).encode(),
                            "text/html; charset=utf-8")
             else:
                 self._send(404, b"not found", "text/plain")
@@ -78,7 +78,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> None:
     httpd = ThreadingHTTPServer(("0.0.0.0", config.PORT), Handler)
-    log.info("kitchen board on :%s (tz %s, sample=%s)", config.PORT, config.TZ_NAME,
+    log.info("calendar screens on :%s (tz %s, sample=%s)", config.PORT, config.TZ_NAME,
              board.calendar_data.using_sample())
     httpd.serve_forever()
 

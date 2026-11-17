@@ -29,5 +29,5 @@
     $src
 ) !!}
 @else
-<div style="font: 22px/1.4 sans-serif; padding: 48px;">Kitchen board data isn't available. Check that the kitchen-board container is running and the polling URL is right.</div>
+<div style="font: 22px/1.4 sans-serif; padding: 48px;">Calendar data isn't available. Check that the kitchen-board container is running and the polling URL is right.</div>
 @endif
