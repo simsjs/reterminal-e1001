@@ -15,7 +15,7 @@ fitness screen from Strava (see [`strava/`](strava/README.md)) and a weather scr
 ![This week](kitchen-board/preview/week.png)
 
 **Morning Brief** (date, weather, today's events, three tiles) is paused while
-it gets more work. It still renders at `http://<pi-ip>:4568/brief` for
+it gets more work. It still renders at `http://localhost:4568/brief` for
 previews, but it isn't in a playlist and doesn't get a header dot. To bring it
 back, set `BRIEF_ENABLED=on` and add 1 to `KB_PAGE_COUNT` in `.env`, then add a
 Morning playlist in LaraPaper.
@@ -65,8 +65,9 @@ Morning playlist in LaraPaper.
 
    Log in to LaraPaper. Your account and the E1001 should still be there.
 
-2. **Check the previews** in a browser at `http://<pi-ip>:4568/brief` and
-   `http://<pi-ip>:4568/week`.
+2. **Check the previews** at `http://localhost:4568/brief` and
+   `http://localhost:4568/week` (see "Previews and raw data" below for how to
+   open them from your laptop).
 
 3. **Set up LaraPaper.**
    - Set your profile timezone to **America/New_York**. Playlists and sleep
@@ -158,6 +159,21 @@ in `content.yml`; whichever is sooner is shown. `HOLIDAY_SHOW_WITHIN_DAYS` in
 The Morning Brief tiles are a hand-written list, not pulled from any app. Edit `kitchen-board/content/content.yml`. After a `git pull`, changes show up
 on the next refresh without a rebuild.
 
+## Previews and raw data
+
+Only LaraPaper (port 4567) is open to your home network. The previews and the
+bridges' raw-data pages (ports 4568-4572) answer on the Pi itself. To open them
+in a browser on your laptop, tunnel them over SSH and leave that window open:
+
+```bash
+ssh -L 4568:localhost:4568 -L 4569:localhost:4569 -L 4570:localhost:4570 \
+    -L 4571:localhost:4571 -L 4572:localhost:4572 pi@<pi-ip>
+```
+
+Then use `http://localhost:4568/week` and so on. To open the ports to the whole
+network again, set `LOCAL_BIND=0.0.0.0` in `larapaper/.env` and run
+`docker compose up -d`.
+
 ## Updating
 
 ```bash
@@ -171,12 +187,14 @@ cd larapaper && docker compose up -d --build
   but only if the TRMNL firmware reports those readings to LaraPaper.
   Otherwise the box shows `--`.
 - **The recipe says the data isn't available, but the preview works:** check
-  the polling URL. If LaraPaper won't fetch from the container name, use
+  the polling URL. If LaraPaper won't fetch from the container name, set
+  `LOCAL_BIND=0.0.0.0` in `.env`, run `docker compose up -d`, and use
   `http://<pi-ip>:4568/api/brief` and `/api/week` instead.
 - **HTML tags show up as text:** switch the recipe's markup language to Blade
   and paste `recipes/kitchen-board.blade.php` instead.
 - **Fonts look generic:** LaraPaper's renderer can't reach the fonts. Set
-  `FONT_BASE_URL=http://<pi-ip>:4568` in `.env` and run `docker compose up -d`.
+  `FONT_BASE_URL=http://<pi-ip>:4568` and `LOCAL_BIND=0.0.0.0` in `.env` and run
+  `docker compose up -d`.
 - **Run it on a laptop:**
 
   ```bash

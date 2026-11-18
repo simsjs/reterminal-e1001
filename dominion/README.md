@@ -62,9 +62,9 @@ It checks every 2 hours and serves the result to LaraPaper as JSON. It only read
 
 ## Extras
 
-- **Raw panel data:** `http://<pi-ip>:4570/dominion.json?token=<DOMINION_BRIDGE_TOKEN>`
-- **Dominion's raw bill-forecast response** (to see every field they send): `http://<pi-ip>:4570/raw.json?token=<DOMINION_BRIDGE_TOKEN>`
-- **Status:** `http://<pi-ip>:4570/health`
+- **Raw panel data:** `http://localhost:4570/dominion.json?token=<DOMINION_BRIDGE_TOKEN>`
+- **Dominion's raw bill-forecast response** (to see every field they send): `http://localhost:4570/raw.json?token=<DOMINION_BRIDGE_TOKEN>`
+- **Status:** `http://localhost:4570/health`
 
 ## Settings (`larapaper/.env`)
 

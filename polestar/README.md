@@ -52,9 +52,9 @@ Polestar has no public API, so `bridge/` runs a small Python service (`polestar-
 
 ## Extras
 
-- **Car images Polestar has of your cars:** `http://<pi-ip>:4569/images?token=<POLESTAR_BRIDGE_TOKEN>`
-- **Raw data:** `http://<pi-ip>:4569/polestar.json?token=<POLESTAR_BRIDGE_TOKEN>`
-- **Status:** `http://<pi-ip>:4569/health`
+- **Car images Polestar has of your cars:** `http://localhost:4569/images?token=<POLESTAR_BRIDGE_TOKEN>`
+- **Raw data:** `http://localhost:4569/polestar.json?token=<POLESTAR_BRIDGE_TOKEN>`
+- **Status:** `http://localhost:4569/health`
 
 After changing images, run `docker compose restart polestar-bridge`.
 

@@ -76,8 +76,8 @@ Hours are moving time. Relative effort is Strava's own score, so it only shows i
 
 ## Extras
 
-- **Raw panel data:** `http://<pi-ip>:4571/fitness.json?token=<STRAVA_BRIDGE_TOKEN>`
-- **Status:** `http://<pi-ip>:4571/health`
+- **Raw panel data:** `http://localhost:4571/fitness.json?token=<STRAVA_BRIDGE_TOKEN>`
+- **Status:** `http://localhost:4571/health`
 - **Try each layout in demo mode:** set `STRAVA_DEMO=1` and `STRAVA_DEMO_LAYOUT` to `ride`, `route` or `effort`, then run `docker compose up -d`.
 
 ## Settings (`larapaper/.env`)

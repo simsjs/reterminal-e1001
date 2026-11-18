@@ -6,6 +6,11 @@
 #
 # The project name is pinned to "larapaper" so Docker reuses the volumes
 # (larapaper_database, larapaper_storage) from the original ~/larapaper setup.
+#
+# Only LaraPaper (4567) is open to the home network, because the E1001 needs it.
+# The other services listen on the Pi itself (LOCAL_BIND, default 127.0.0.1);
+# LaraPaper reaches them by container name. To open one in a browser on your
+# laptop, tunnel it over SSH (see "Previews and raw data" in the README).
 name: larapaper
 
 services:
@@ -33,7 +38,7 @@ services:
     build: ../kitchen-board
     restart: unless-stopped
     ports:
-      - "4568:8080"   # preview in a browser: http://<pi-ip>:4568/brief
+      - "${LOCAL_BIND:-127.0.0.1}:4568:8080"   # preview, from the Pi only: http://localhost:4568/week
     environment:
       - TZ=${TZ:-America/New_York}
       - WEATHER_LAT=${WEATHER_LAT:-38.8462}
@@ -57,7 +62,7 @@ services:
     build: ../polestar/bridge
     restart: unless-stopped
     ports:
-      - "4569:8765"   # car images page: http://<pi-ip>:4569/images?token=<POLESTAR_BRIDGE_TOKEN>
+      - "${LOCAL_BIND:-127.0.0.1}:4569:8765"   # car images page, from the Pi only: http://localhost:4569/images?token=<POLESTAR_BRIDGE_TOKEN>
     environment:
       - TZ=${TZ:-America/New_York}
       - POLESTAR_USERNAME=${POLESTAR_USERNAME:-}
@@ -80,7 +85,7 @@ services:
     build: ../dominion/bridge
     restart: unless-stopped
     ports:
-      - "4570:8765"   # raw data: http://<pi-ip>:4570/dominion.json?token=<DOMINION_BRIDGE_TOKEN>
+      - "${LOCAL_BIND:-127.0.0.1}:4570:8765"   # raw data, from the Pi only: http://localhost:4570/dominion.json?token=<DOMINION_BRIDGE_TOKEN>
     environment:
       - TZ=${TZ:-America/New_York}
       - BRIDGE_TOKEN=${DOMINION_BRIDGE_TOKEN:-}
@@ -98,7 +103,7 @@ services:
     build: ../strava/bridge
     restart: unless-stopped
     ports:
-      - "4571:8765"   # raw data: http://<pi-ip>:4571/fitness.json?token=<STRAVA_BRIDGE_TOKEN>
+      - "${LOCAL_BIND:-127.0.0.1}:4571:8765"   # raw data, from the Pi only: http://localhost:4571/fitness.json?token=<STRAVA_BRIDGE_TOKEN>
     environment:
       - TZ=${TZ:-America/New_York}
       - BRIDGE_TOKEN=${STRAVA_BRIDGE_TOKEN:-}
@@ -118,7 +123,7 @@ services:
     build: ../weather/bridge
     restart: unless-stopped
     ports:
-      - "4572:8765"   # raw data: http://<pi-ip>:4572/weather.json
+      - "${LOCAL_BIND:-127.0.0.1}:4572:8765"   # raw data, from the Pi only: http://localhost:4572/weather.json
     environment:
       - TZ=${TZ:-America/New_York}
       - WEATHER_LAT=${WEATHER_LAT:-38.8462}

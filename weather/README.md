@@ -80,8 +80,8 @@ It turns all that into ready-to-draw JSON for LaraPaper, including the house pic
 
 ## Extras
 
-- **Raw panel data:** `http://<pi-ip>:4572/weather.json` (add `?token=<WEATHER_BRIDGE_TOKEN>` if you set one)
-- **Status:** `http://<pi-ip>:4572/health`
+- **Raw panel data:** `http://localhost:4572/weather.json` (add `?token=<WEATHER_BRIDGE_TOKEN>` if you set one)
+- **Status:** `http://localhost:4572/health`
 
 ## Settings (`larapaper/.env`)
 
