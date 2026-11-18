@@ -39,6 +39,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import io
+import json
 import contextlib
 import html
 import logging
@@ -84,6 +85,7 @@ class CarSnapshot:
     charging_type: str | None = None  # "AC" / "DC"
     minutes_to_full: int | None = None
     consumption_kwh_100km: float | None = None
+    consumption_source: str | None = None  # "automatic", "manual" or "calculated"
     odometer_m: int | None = None
     days_to_service: int | None = None
     km_to_service: int | None = None
@@ -149,9 +151,10 @@ def _car_images(api: Any, vin: str, info: Any) -> list[dict[str, Any]]:
 #   field 12 average_energy_consumption_kwh_per_100_km_automatic     automatic trip (resets after a few
 #                                                                     hours parked)
 #   field 13 average_energy_consumption_kwh_per_100_km_since_charge  since the last charge
-# pypolestar 1.12.7 keeps only the manual one, which barely moves and on some cars is nonsense
-# (Midnight reported ~0.9). We wrap its battery parser so the other two come along, then show
-# the automatic trip, falling back to since-charge and finally manual.
+# pypolestar 1.12.7 keeps only the manual one, so we wrap its battery parser to keep the others.
+# The screen uses: automatic trip -> manual trip -> the bridge's own calculation (see
+# EfficiencyTracker). Since-charge is only logged. Each must be believable to be used: Midnight's
+# manual trip reads ~0.9 kWh/100 km, because its energy counter stopped while distance kept counting.
 _TRIP_FIELDS = (
     ("automatic", "average_energy_consumption_kwh_per_100_km_automatic"),
     ("since charge", "average_energy_consumption_kwh_per_100_km_since_charge"),
@@ -185,21 +188,131 @@ def _capture_trip_averages() -> None:
     grpc_client._parse_battery = parse_battery
 
 
-def _pick_consumption(vin: str, grpc_batt: Any) -> float | None:
-    """Automatic trip first, then since-charge, then manual: the first believable one wins."""
+def _believable(value: float | None) -> bool:
     low, high = SANE_CONSUMPTION_KWH_100KM
-    candidates = [(key, getattr(grpc_batt, f"_avg_{key.replace(' ', '_')}", None)) for key, _ in _TRIP_FIELDS]
-    candidates.append(("manual", grpc_batt.average_energy_consumption_kwh_per_100km))
-    reported = [(k, v) for k, v in candidates if v]  # 0.0 means "not reported" in Polestar's data
-    chosen = next(((k, v) for k, v in reported if low <= v <= high), None)
-    summary = ", ".join(f"{k} {v:.1f}" for k, v in reported) or "none reported"
+    return value is not None and low <= value <= high
+
+
+def _pick_consumption(vin: str, grpc_batt: Any, calculated: float | None) -> tuple[float | None, str | None]:
+    """Automatic trip, then manual trip, then our own calculation: the first believable one wins.
+
+    Returns (kWh/100 km, source). With nothing believable it returns the raw reported value and no
+    source, so the screen can show "Pending" (or the last good value) rather than nonsense.
+    """
+    automatic = getattr(grpc_batt, "_avg_automatic", None) if grpc_batt else None
+    since_charge = getattr(grpc_batt, "_avg_since_charge", None) if grpc_batt else None
+    manual = grpc_batt.average_energy_consumption_kwh_per_100km if grpc_batt else None
+    chain = [("automatic", automatic), ("manual", manual), ("calculated", calculated)]
+    chosen = next(((k, v) for k, v in chain if v and _believable(v)), None)  # 0.0 = not reported
+
+    shown = [("automatic", automatic), ("since charge", since_charge), ("manual", manual), ("calculated", calculated)]
+    summary = ", ".join(f"{k} {v:.1f}" for k, v in shown if v) or "none reported"
     line = f"{summary} -> using {chosen[0] if chosen else 'nothing believable'}"
     if _last_consumption_log.get(vin) != line:  # log only when the numbers change
         log.info("Consumption kWh/100 km for VIN ...%s: %s", vin[-4:], line)
         _last_consumption_log[vin] = line
     if chosen:
-        return chosen[1]
-    return reported[0][1] if reported else None  # lets the "Pending" logic below handle it
+        return chosen[1], chosen[0]
+    return next((v for _, v in chain if v), None), None
+
+
+# --------------------------------------------------------------------------- #
+# Self-calculated efficiency
+# --------------------------------------------------------------------------- #
+# Usable battery size in kWh, needed to turn "% used" into kWh. Override per car with
+# POLESTAR_BATTERY_KWH="1234=75,5678=107" (last 4 of the VIN). Defaults are approximate.
+_DEFAULT_BATTERY_KWH = {"Polestar 2": 75.0, "Polestar 3": 107.0, "Polestar 4": 94.0}
+
+
+def _battery_kwh(vin: str, model: str | None) -> float:
+    for pair in os.getenv("POLESTAR_BATTERY_KWH", "").split(","):
+        if "=" in pair:
+            key, value = pair.split("=", 1)
+            if key.strip().upper() in (vin.upper(), vin[-4:].upper()):
+                with contextlib.suppress(ValueError):
+                    return float(value)
+    for name, kwh in _DEFAULT_BATTERY_KWH.items():
+        if model and name.lower().replace(" ", "") in model.lower().replace(" ", ""):
+            return kwh
+    return 75.0
+
+
+class EfficiencyTracker:
+    """Works out kWh/100 km from what the bridge sees: distance driven vs battery % used.
+
+    Every refresh, if the odometer went up since the last refresh and the car wasn't charging at
+    either end, that stretch is recorded as a leg (km driven, % used). The estimate covers the
+    most recent WINDOW_KM of legs and needs at least MIN_KM before it's shown. Legs that span a
+    charge, an odometer glitch or a long gap are skipped. Saved to STATE_DIR so restarts keep it.
+    """
+
+    WINDOW_KM = 500.0
+    MIN_KM = 40.0
+    MAX_GAP = timedelta(hours=3)
+    KEEP = timedelta(days=60)
+
+    def __init__(self) -> None:
+        state_dir = os.getenv("STATE_DIR", "/app/state")
+        self.path = os.path.join(state_dir, "efficiency.json")
+        self.data: dict[str, Any] = {}
+        try:
+            with open(self.path, encoding="utf-8") as fh:
+                self.data = json.load(fh)
+        except FileNotFoundError:
+            pass
+        except Exception as exc:
+            log.warning("Couldn't read %s (%s); starting fresh", self.path, exc)
+
+    def _save(self) -> None:
+        try:
+            os.makedirs(os.path.dirname(self.path), exist_ok=True)
+            tmp = self.path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as fh:
+                json.dump(self.data, fh)
+            os.replace(tmp, self.path)
+        except Exception as exc:  # not fatal: the estimate just won't survive a restart
+            log.warning("Couldn't save %s: %s", self.path, exc)
+
+    def observe(self, vin: str, odometer_m: int | None, percent: float | None, charging: bool,
+                when: datetime) -> None:
+        if odometer_m is None or percent is None:
+            return
+        car = self.data.setdefault(vin, {"last": None, "legs": []})
+        last = car["last"]
+        now_ts = when.timestamp()
+        if last:
+            km = (odometer_m - last["odo"]) / 1000
+            used = last["pct"] - percent
+            gap = timedelta(seconds=now_ts - last["ts"])
+            if km > 0.05:
+                if charging or last["charging"] or used < -1.0:
+                    log.debug("Skipping leg for ...%s: charged along the way", vin[-4:])
+                elif gap > self.MAX_GAP or km > 1500:
+                    log.debug("Skipping leg for ...%s: gap %s, %.1f km", vin[-4:], gap, km)
+                else:
+                    car["legs"].append([now_ts, round(km, 3), round(used, 2)])
+            elif km < 0:
+                log.debug("Odometer went backwards for ...%s; ignoring", vin[-4:])
+        if last is None or odometer_m != last["odo"] or percent != last["pct"] or charging != last["charging"]:
+            car["last"] = {"odo": odometer_m, "pct": percent, "ts": now_ts, "charging": charging}
+            cutoff = now_ts - self.KEEP.total_seconds()
+            car["legs"] = [leg for leg in car["legs"] if leg[0] >= cutoff]
+            self._save()
+
+    def estimate(self, vin: str, battery_kwh: float) -> float | None:
+        legs = self.data.get(vin, {}).get("legs", [])
+        km = used = 0.0
+        for _, leg_km, leg_used in reversed(legs):  # newest first
+            km += leg_km
+            used += leg_used
+            if km >= self.WINDOW_KM:
+                break
+        if km < self.MIN_KM or used <= 0:
+            return None
+        return used / 100 * battery_kwh / km * 100
+
+
+tracker: EfficiencyTracker | None = None
 
 
 def _snapshot_from_api(api: Any, vin: str) -> CarSnapshot:
@@ -234,7 +347,6 @@ def _snapshot_from_api(api: Any, vin: str) -> CarSnapshot:
         snap.connection = _enum_text(grpc_batt.charger_connection_status)
         snap.power_w = grpc_batt.charging_power_watts
         snap.charging_type = _enum_text(grpc_batt.charging_type)
-        snap.consumption_kwh_100km = _pick_consumption(vin, grpc_batt)
         if grpc_batt.timestamp:
             snap.event_time = grpc_batt.timestamp
 
@@ -243,6 +355,13 @@ def _snapshot_from_api(api: Any, vin: str) -> CarSnapshot:
 
     if tele and tele.odometer:
         snap.odometer_m = tele.odometer.odometer_meters
+
+    calculated = None
+    if tracker is not None:
+        charging = snap.charging_status in {"Charging", "Smart Charging"} or snap.connection == "Connected"
+        tracker.observe(vin, snap.odometer_m, snap.percent, charging, snap.event_time or snap.fetched_at)
+        calculated = tracker.estimate(vin, _battery_kwh(vin, snap.model))
+    snap.consumption_kwh_100km, snap.consumption_source = _pick_consumption(vin, grpc_batt, calculated)
 
     if tele and tele.health:
         h = tele.health
@@ -269,6 +388,9 @@ class PolestarPoller:
         from pypolestar import PolestarApi  # imported lazily so DEMO mode needs no login
 
         _capture_trip_averages()
+        global tracker
+        if tracker is None:
+            tracker = EfficiencyTracker()
 
         vins = [v.strip() for v in os.getenv("POLESTAR_VINS", "").split(",") if v.strip()] or None
         self.api = PolestarApi(
@@ -412,18 +534,18 @@ def _display_names(cars: list[CarSnapshot]) -> dict[str, str]:
 # this range the screen shows the car's last sensible value, or "Pending" until one
 # arrives. The last values are kept in memory, so a bridge restart clears them.
 SANE_CONSUMPTION_KWH_100KM = (8.0, 60.0)
-_last_sane_consumption: dict[str, float] = {}
+_last_sane_consumption: dict[str, tuple[float, str | None]] = {}
 
 
-def _sane_consumption(c: CarSnapshot) -> float | None:
-    low, high = SANE_CONSUMPTION_KWH_100KM
+def _sane_consumption(c: CarSnapshot) -> tuple[float | None, str | None]:
+    """(kWh/100 km, source) to show: this refresh's value if believable, else the last good one."""
     value = c.consumption_kwh_100km
-    if value is not None and low <= value <= high:
-        _last_sane_consumption[c.vin] = value
-        return value
+    if _believable(value):
+        _last_sane_consumption[c.vin] = (value, c.consumption_source)
+        return value, c.consumption_source
     if value is not None and c.vin not in _last_sane_consumption:
         log.info("Ignoring implausible consumption %.2f kWh/100 km for VIN ...%s", value, c.vin[-4:])
-    return _last_sane_consumption.get(c.vin)
+    return _last_sane_consumption.get(c.vin, (None, None))
 
 
 def format_car(c: CarSnapshot, name: str, imperial: bool, now: datetime) -> dict[str, Any]:
@@ -452,13 +574,15 @@ def format_car(c: CarSnapshot, name: str, imperial: bool, now: datetime) -> dict
         full_range = c.range_km / c.percent * 100
 
     efficiency = None
-    consumption = _sane_consumption(c)
+    consumption, source = _sane_consumption(c)
     if consumption:
         efficiency = (
             _num(100 / (consumption * KM_PER_MI), 1)  # mi/kWh
             if imperial
             else _num(consumption, 1)  # kWh/100 km
         )
+        if source == "calculated":
+            efficiency = "≈" + efficiency  # worked out by the bridge, not reported by the car
     # Reported, but nothing sensible yet: show "Pending" rather than hiding it.
     efficiency_pending = efficiency is None and bool(c.consumption_kwh_100km)
 
