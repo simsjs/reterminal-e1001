@@ -10,7 +10,12 @@ name: larapaper
 
 services:
   app:
-    image: ghcr.io/usetrmnl/larapaper:latest
+    # Pinned so LaraPaper only changes when we choose to. To upgrade on purpose:
+    # pick a release at https://github.com/usetrmnl/larapaper/releases, run
+    #   docker buildx imagetools inspect ghcr.io/usetrmnl/larapaper:<version>
+    # put that version and its "Digest:" line below, then `docker compose up -d app`.
+    # Back up first (sudo systemctl start piberry-backup.service).
+    image: ghcr.io/usetrmnl/larapaper:0.47.0@sha256:9f22c462265e4e9cbf6ce2604d59205e6dd3f3cafb89a5d7adddeb81f6349666
     restart: unless-stopped
     ports:
       - "4567:8080"
