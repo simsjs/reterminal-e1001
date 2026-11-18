@@ -23,6 +23,12 @@ A full-screen LaraPaper recipe for the E1001 showing the weather in Fairfax. It 
 
 The previews use made-up data.
 
+## Pictures of the house
+
+Add drawings of the house for each season and kind of weather to `weather/images/` on the Pi, and the left side becomes that picture: snowing, snow on the ground, rain, windy, clear or cloudy, with leafy versions for spring and summer. The current temperature, conditions, plan (or alert) and the six details sit underneath in three columns, and the 24-hour chart and 7-day forecast move into a narrower right side. The picture gives up some height when an alert or a two-line plan needs the room. It's cropped from the middle, never rescaled, so the dithering stays crisp.
+
+The pictures stay on the Pi and out of git. File names and the rules for which one shows are in [`images/README.md`](images/README.md). Without any pictures, the screen uses the layout shown above.
+
 ## How it works
 
 `bridge/` runs a small Python service (`weather-bridge` in `larapaper/docker-compose.yml`). Every 15 minutes it asks three free services that need no account or API key:
@@ -31,7 +37,7 @@ The previews use made-up data.
 - Open-Meteo's air-quality API for the US AQI
 - the National Weather Service's [alerts API](https://www.weather.gov/documentation/services-web-api) for active watches, warnings and advisories at your location
 
-It turns all that into ready-to-draw JSON for LaraPaper. If Open-Meteo can't be reached, the screen keeps the last good forecast and shows an **Offline** tag where the feels-like reading usually is. If only air quality or alerts fail, the rest of the screen still updates.
+It turns all that into ready-to-draw JSON for LaraPaper, including the house picture for right now (converted to black and white once, and again only when the file changes). If Open-Meteo can't be reached, the screen keeps the last good forecast and shows an **Offline** tag where the feels-like reading usually is. If only air quality or alerts fail, the rest of the screen still updates.
 
 ## Setup on the Pi
 
@@ -47,6 +53,7 @@ It turns all that into ready-to-draw JSON for LaraPaper. If Open-Meteo can't be 
    - `WEATHER_BRIDGE_TOKEN` is optional. Weather isn't private, so you can leave it empty.
    - Set `KB_PAGE_COUNT=5` so This Week shows five dots.
    - For a first look without going online, set `WEATHER_DEMO=1`.
+   - Optional: copy the house pictures into `~/reterminal-e1001/weather/images/` (see [`images/README.md`](images/README.md)).
 
 2. **Start it.**
 
@@ -77,6 +84,7 @@ It turns all that into ready-to-draw JSON for LaraPaper. If Open-Meteo can't be 
 | `WEATHER_PLACE` | Fairfax | Name shown on the screen |
 | `WEATHER_REFRESH_MINUTES` | 15 | How often the bridge checks the forecast (minimum 5) |
 | `WEATHER_ALERTS` | on | `off` skips National Weather Service alerts |
+| `WEATHER_SCENE` | auto | Pictures of the house: `auto` picks one for the season and weather, `off` never shows one, or a name like `rain` always shows that one |
 | `WEATHER_DEMO` | 0 | `1` shows made-up data |
 
 ## When it stops working

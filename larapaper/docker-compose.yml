@@ -122,7 +122,11 @@ services:
       - BRIDGE_TOKEN=${WEATHER_BRIDGE_TOKEN:-}
       - REFRESH_MINUTES=${WEATHER_REFRESH_MINUTES:-15}
       - ALERTS=${WEATHER_ALERTS:-on}
+      - SCENE=${WEATHER_SCENE:-auto}
       - DEMO=${WEATHER_DEMO:-0}
+    volumes:
+      # Your own pictures of the house for each season and weather (not in git).
+      - ../weather/images:/app/images:ro
 
 volumes:
   database:

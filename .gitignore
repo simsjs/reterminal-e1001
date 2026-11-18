@@ -12,3 +12,7 @@ polestar/images/cars/*
 # The logo for the home energy screen stays on the Pi, out of git.
 dominion/images/*
 !dominion/images/README.md
+
+# The house pictures for the weather screen stay on the Pi, out of git.
+weather/images/*
+!weather/images/README.md

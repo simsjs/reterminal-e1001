@@ -20,6 +20,10 @@ The screen shows:
     right    the next 24 hours (temperature line, chance-of-rain bars, an icon every
              3 hours) and the next 7 days
 
+With scene pictures in SCENE_DIR, the left side becomes a picture of the house that
+matches the season and the weather (snowing, snow on the ground, rain, windy, clear,
+cloudy), with the current conditions in a caption box. See weather/images/README.md.
+
 Environment:
     WEATHER_LAT, WEATHER_LON   location, default Fairfax, VA
     WEATHER_PLACE              name shown on the screen, default Fairfax
@@ -27,12 +31,18 @@ Environment:
     REFRESH_MINUTES            background refresh interval, default 15 (minimum 5)
     ALERTS                     "off" to skip National Weather Service alerts
     TZ                         IANA time zone, default America/New_York
+    SCENE_DIR                  folder of scene pictures, default /app/images
+    SCENE                      "auto" (default) picks a picture from the weather, "off" never
+                               shows one, or a picture name (e.g. "rain") always shows that one
+    SCENE_FOCUS                0-1, which part of a tall picture to keep (0 = top), default 0.45
     DEMO                       "1" to serve made-up data without going online
 """
 
 from __future__ import annotations
 
 import asyncio
+import base64
+import io
 import logging
 import math
 import os
@@ -58,12 +68,16 @@ BRIDGE_TOKEN = os.getenv("BRIDGE_TOKEN", "")
 REFRESH_MINUTES = max(5, int(os.getenv("REFRESH_MINUTES", "15") or 15))
 ALERTS = os.getenv("ALERTS", "on").strip().lower() not in ("0", "off", "no", "false")
 DEMO = os.getenv("DEMO", "0").strip().lower() in ("1", "true", "yes", "on")
+SCENE_DIR = os.getenv("SCENE_DIR", "/app/images")
+SCENE_MODE = (os.getenv("SCENE") or "auto").strip().lower()
 
 USER_AGENT = "reterminal-e1001 weather-bridge (github.com/simsjs/reterminal-e1001)"
 
 # Pixel sizes the recipe draws with (full layout). Kept here so the template stays simple.
 HOURS = 24
 CHART_W, CHART_H = 456, 116  # next-24-hours chart
+SCENE_CHART_W = 300          # the chart is narrower when the left side is a scene picture
+SCENE_W, SCENE_H = 460, 220  # scene picture; the screen crops it to fit, never rescales
 TEMP_TOP, TEMP_BOTTOM = 22, 30  # room above the line for labels, below it for the rain bars to show
 DAYS = 7
 
@@ -263,9 +277,9 @@ def plan_text(hours: list[dict[str, Any]], today: dict[str, Any], now: datetime)
     return " ".join(parts)
 
 
-def build_hourly(hours: list[dict[str, Any]]) -> dict[str, Any]:
+def build_hourly(hours: list[dict[str, Any]], width: int = CHART_W) -> dict[str, Any]:
     n = len(hours)
-    slot = CHART_W / n
+    slot = width / n
     temps = [r["temp"] for r in hours]
     lo, hi = min(temps), max(temps)
     if hi - lo < 8:  # keep a flat day looking flat
@@ -278,7 +292,7 @@ def build_hourly(hours: list[dict[str, Any]]) -> dict[str, Any]:
 
     pts = [(slot * (i + 0.5), y(t)) for i, t in enumerate(temps)]
     # Run the line to both edges so it doesn't stop half a slot short.
-    line = [(0.0, pts[0][1])] + pts + [(float(CHART_W), pts[-1][1])]
+    line = [(0.0, pts[0][1])] + pts + [(float(width), pts[-1][1])]
     path = "M" + " L".join(f"{x:.1f} {yy:.1f}" for x, yy in line)
 
     marks = []
@@ -308,7 +322,7 @@ def build_hourly(hours: list[dict[str, Any]]) -> dict[str, Any]:
     else:
         note = "No rain expected"
 
-    out: dict[str, Any] = {"w": CHART_W, "h": CHART_H, "path": path, "bars": bars, "marks": marks, "note": note}
+    out: dict[str, Any] = {"w": width, "h": CHART_H, "path": path, "bars": bars, "marks": marks, "note": note}
     if lo < 32 < hi:
         out["freeze_y"] = round(y(32), 1)
     # Night shading: stripes behind the hours between sunset and sunrise.
@@ -390,6 +404,138 @@ def build_details(fc: dict[str, Any], aq: dict[str, Any] | None, now: datetime) 
     return cells
 
 
+# ── Scene pictures: drawings of the house for each season and kind of weather ──
+SCENE_EXTS = (".png", ".jpg", ".jpeg", ".webp")
+# What to try for each kind of weather, after "<season>-<kind>". The first file found wins.
+SCENE_FALLBACKS = {
+    "snowing": ["snowing", "snow-cover", "rain", "cloudy"],
+    "snow-cover": ["snow-cover", "cloudy", "clear"],
+    "rain": ["rain", "cloudy"],
+    "windy": ["windy", "cloudy", "clear"],
+    "clear": ["clear", "cloudy"],
+    "cloudy": ["cloudy", "clear"],
+}
+_scene_cache: dict[str, tuple[float, dict[str, Any]]] = {}
+
+
+def season(now: datetime) -> str:
+    """Leafy months get their own pictures; bare-tree months (Oct-Mar) use the plain ones."""
+    m = now.month
+    if m in (4, 5):
+        return "spring"
+    if m in (6, 7, 8, 9):
+        return "summer"
+    if m in (10, 11):
+        return "fall"
+    return "winter"
+
+
+def scene_kind(fc: dict[str, Any], hours: list[dict[str, Any]], snow_in: float) -> str:
+    """snowing, rain, snow-cover, windy, clear or cloudy, from what's happening now."""
+    c = fc["current"]
+    code = c.get("weather_code")
+    soon = hours[:2]
+    if code in SNOW or any(r["prob"] >= 50 and r["code"] in SNOW for r in soon):
+        return "snowing"
+    if code in RAIN or code in STORM or any(r["prob"] >= 60 and r["code"] in (RAIN | STORM) for r in soon[:1]):
+        return "rain"
+    if snow_in >= 1:
+        return "snow-cover"
+    if (c.get("wind_gusts_10m") or 0) >= 25 or (c.get("wind_speed_10m") or 0) >= 15:
+        return "windy"
+    if code in (0, 1):
+        return "clear"
+    return "cloudy"
+
+
+def _scene_file(name: str) -> str | None:
+    for ext in SCENE_EXTS:
+        path = os.path.join(SCENE_DIR, name + ext)
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def pick_scene_file(kind: str, when: str) -> str | None:
+    """Most specific first: summer-rain, then summer (any dry day), then rain, then fallbacks."""
+    names = [f"{when}-{kind}"]
+    if when in ("spring", "summer") and kind in ("clear", "cloudy", "windy"):
+        names.append(when)  # one leafy picture covers any dry day
+    names += SCENE_FALLBACKS.get(kind, [kind])
+    if when in ("spring", "summer"):
+        names.append(when)
+    for name in names:
+        path = _scene_file(name)
+        if path:
+            return path
+    return None
+
+
+def eink_scene_png(path: str, width: int = SCENE_W, height: int = SCENE_H) -> bytes:
+    """Crop a scene drawing to width x height and dither it to 1-bit for e-ink.
+
+    The outer few percent are trimmed so hand-drawn frames don't show, the crop keeps
+    the house (a little above centre) and Floyd-Steinberg dithering keeps the halftone
+    look. Rendered at exactly the panel size so the browser never rescales it.
+    """
+    from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+
+    im = ImageOps.exif_transpose(Image.open(path))
+    if im.mode in ("RGBA", "LA", "P"):
+        im = im.convert("RGBA")
+        flat = Image.new("RGBA", im.size, (255, 255, 255, 255))
+        flat.alpha_composite(im)
+        im = flat
+    im = im.convert("L")
+    ix, iy = round(im.width * 0.03), round(im.height * 0.035)
+    im = im.crop((ix, iy, im.width - ix, im.height - iy))
+    scale = max(width / im.width, height / im.height)
+    im = im.resize((round(im.width * scale), round(im.height * scale)), Image.Resampling.LANCZOS)
+    focus = float(os.getenv("SCENE_FOCUS") or (0.45 if im.width / im.height > 1.6 else 0.38))
+    x = (im.width - width) // 2
+    y = round((im.height - height) * min(max(focus, 0.0), 1.0))
+    im = im.crop((x, y, x + width, y + height))
+    im = ImageOps.autocontrast(im, cutoff=1)
+    im = ImageEnhance.Contrast(im).enhance(1.3).filter(ImageFilter.UnsharpMask(1.5, 120, 2))
+    buf = io.BytesIO()
+    im.convert("1").save(buf, format="PNG", optimize=True)
+    return buf.getvalue()
+
+
+def load_scene(path: str) -> dict[str, Any] | None:
+    """The scene as a data URI, converted once and again only when the file changes."""
+    try:
+        mtime = os.path.getmtime(path)
+        cached = _scene_cache.get(path)
+        if cached and cached[0] == mtime:
+            return cached[1]
+        png = eink_scene_png(path)
+        scene = {"src": "data:image/png;base64," + base64.b64encode(png).decode(), "w": SCENE_W, "h": SCENE_H,
+                 "name": os.path.splitext(os.path.basename(path))[0]}
+        _scene_cache[path] = (mtime, scene)
+        log.info("Scene picture loaded: %s", path)
+        return scene
+    except Exception as err:
+        log.warning("Could not load scene picture %s: %s", path, err)
+        return None
+
+
+def snow_depth_inches(fc: dict[str, Any]) -> float:
+    depth = (fc.get("current") or {}).get("snow_depth") or 0
+    unit = ((fc.get("current_units") or {}).get("snow_depth") or "m").lower()
+    return depth * {"m": 39.37, "cm": 0.3937, "ft": 12, "inch": 1, "in": 1, '"': 1}.get(unit, 39.37)
+
+
+def choose_scene(fc: dict[str, Any], hours: list[dict[str, Any]], now: datetime) -> dict[str, Any] | None:
+    if SCENE_MODE == "off" or not os.path.isdir(SCENE_DIR):
+        return None
+    if SCENE_MODE != "auto":
+        path = _scene_file(SCENE_MODE)
+    else:
+        path = pick_scene_file(scene_kind(fc, hours, snow_depth_inches(fc)), season(now))
+    return load_scene(path) if path else None
+
+
 SEVERITY = {"Extreme": 4, "Severe": 3, "Moderate": 2, "Minor": 1}
 
 
@@ -424,6 +570,7 @@ def build_panel(fc: dict[str, Any], aq: dict[str, Any] | None, alerts: dict[str,
     is_day = bool(c.get("is_day", 1))
     today = {"code": d["weather_code"][0], "high": d["temperature_2m_max"][0], "low": d["temperature_2m_min"][0]}
     hours = hourly_window(fc, now)
+    scene = choose_scene(fc, hours, now)
     panel: dict[str, Any] = {
         "ok": True,
         "as_of": _clock(now),
@@ -439,9 +586,11 @@ def build_panel(fc: dict[str, Any], aq: dict[str, Any] | None, alerts: dict[str,
             "plan": plan_text(hours, today, now) if hours else "",
         },
         "details": build_details(fc, aq, now),
-        "hourly": build_hourly(hours) if len(hours) >= 6 else None,
+        "hourly": build_hourly(hours, SCENE_CHART_W if scene else CHART_W) if len(hours) >= 6 else None,
         "days": build_days(fc),
     }
+    if scene:
+        panel["scene"] = scene
     alert = build_alert(alerts, now)
     if alert:
         panel["alert"] = alert
@@ -546,7 +695,7 @@ class Source:
             "latitude": LAT,
             "longitude": LON,
             "current": "temperature_2m,apparent_temperature,relative_humidity_2m,dew_point_2m,weather_code,is_day,"
-            "wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl",
+            "wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl,snow_depth",
             "hourly": "temperature_2m,precipitation_probability,precipitation,snowfall,weather_code,is_day,wind_gusts_10m",
             "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,"
             "snowfall_sum,sunrise,sunset,daylight_duration,uv_index_max,wind_speed_10m_max",
