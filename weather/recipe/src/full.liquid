@@ -28,11 +28,12 @@
           </div>
           <div class="wx-now">
             <div class="wx-temp" style="font-size: 60px">{{ now.temp }}<sup>°</sup></div>
-            <div style="min-width: 0">
-              <div class="wx-cond" style="font-size: 19px; margin-top: 0">{{ now.cond }}</div>
-              <div class="wx-hl" style="font-size: 12px; margin-top: 6px">H {{ now.hi }} · L {{ now.lo }}</div>
-              <div class="wx-hl" style="font-size: 12px; margin-top: 4px">FEELS {{ now.feels }}</div>
-            </div>
+            <div class="wx-cond" style="font-size: 21px; margin-top: 0; white-space: normal; line-height: 1.1">{{ now.cond }}</div>
+          </div>
+          <div class="wx-stats">
+            <div><div class="k">Real feel</div><div class="v">{{ now.feels }}</div></div>
+            <div><div class="k">High</div><div class="v">{{ now.hi }}</div></div>
+            <div><div class="k">Low</div><div class="v">{{ now.lo }}</div></div>
           </div>
           {% if alert %}{% render "wx_alert", alert: alert %}{% else %}<div class="wx-plan">{{ now.plan }}</div>{% endif %}
         </div>

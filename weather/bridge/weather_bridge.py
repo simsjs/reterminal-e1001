@@ -391,8 +391,12 @@ def build_details(fc: dict[str, Any], aq: dict[str, Any] | None, now: datetime) 
     rise, set_ = _local(d["sunrise"][0]), _local(d["sunset"][0])
     secs = int(d.get("daylight_duration", [0])[0] or (set_ - rise).total_seconds())
     if now > set_ and len(d["sunrise"]) > 1:
-        rise = _local(d["sunrise"][1])
-        cells.append({"id": "sun", "k": "Sunrise", "v": _short_clock(rise), "vl": _clock(rise), "s": "tomorrow"})
+        # After sunset: tomorrow's sunrise in the small cell, tomorrow's whole day in the wide one.
+        rise, set_ = _local(d["sunrise"][1]), _local(d["sunset"][1])
+        secs = int(d.get("daylight_duration", [0, 0])[1] or (set_ - rise).total_seconds())
+        cells.append({"id": "sun", "k": "Sunrise", "v": _short_clock(rise), "s": "tomorrow",
+                      "kl": "Tomorrow · sunrise · sunset", "vl": f"↑ {_clock(rise)}  ↓ {_clock(set_)}",
+                      "sl": f"{secs // 3600}h {secs % 3600 // 60}m of daylight"})
     else:
         cells.append({"id": "sun", "k": "Sun", "v": f"{_short_clock(rise)}–{_short_clock(set_)}", "vl": f"↑ {_clock(rise)}  ↓ {_clock(set_)}",
                       "kl": "Sunrise · sunset", "s": f"{secs // 3600}h {secs % 3600 // 60}m of daylight"})
