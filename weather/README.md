@@ -28,7 +28,7 @@ The previews use made-up data.
 Add drawings of the house for each season and kind of weather to `weather/images/` on the Pi, and the left side becomes that picture: snowing, snow on the ground, rain, windy, clear or cloudy, with leafy versions for spring and summer and a night picture for dry evenings. The screen then becomes a 2×2 grid:
 
 - **Top left:** the picture.
-- **Top right, the same height:** now: the temperature and conditions, then real feel, high and low side by side, and the plan (or the alert).
+- **Top right, the same height:** now, laid out like the plain screen: the weather icon and temperature with **FEELS** in the corner, then the conditions, high and low, and the plan (or the alert, with a slightly smaller temperature to make room).
 - **Bottom left, the width of the picture:** the next 5 days, with the low-to-high bars on those 5 days' scale.
 - **Bottom right:** wind, humidity, UV, air quality, and sunrise and sunset across the full width with the hours of daylight (tomorrow's after dark).
 

@@ -24,17 +24,15 @@
         <div class="wx-col wx-snow" style="height: {{ scene.h }}px">
           <div class="wx-row" style="justify-content: space-between; gap: 10px">
             <span class="wx-label">Now · {{ place }}</span>
-            {% if warning %}<span class="wx-tag">Offline</span>{% endif %}
+            {% if warning %}<span class="wx-tag">Offline</span>{% else %}<span class="wx-label">Feels {{ now.feels }}</span>{% endif %}
           </div>
-          <div class="wx-now">
-            <div class="wx-temp" style="font-size: 60px">{{ now.temp }}<sup>°</sup></div>
-            <div class="wx-cond" style="font-size: 21px; margin-top: 0; white-space: normal; line-height: 1.1">{{ now.cond }}</div>
+          {% if alert %}{% assign iw = 58 %}{% assign tf = 68 %}{% else %}{% assign iw = 70 %}{% assign tf = 82 %}{% endif %}
+          <div class="wx-hero" style="margin-top: 10px">
+            {% render "wx_icon", kind: now.icon, w: iw %}
+            <div class="wx-temp" style="font-size: {{ tf }}px">{{ now.temp }}<sup>°</sup></div>
           </div>
-          <div class="wx-stats">
-            <div><div class="k">Real feel</div><div class="v">{{ now.feels }}</div></div>
-            <div><div class="k">High</div><div class="v">{{ now.hi }}</div></div>
-            <div><div class="k">Low</div><div class="v">{{ now.lo }}</div></div>
-          </div>
+          <div class="wx-cond" style="margin-top: 10px">{{ now.cond }}</div>
+          <div class="wx-hl">H {{ now.hi }} · L {{ now.lo }}</div>
           {% if alert %}{% render "wx_alert", alert: alert %}{% else %}<div class="wx-plan">{{ now.plan }}</div>{% endif %}
         </div>
         <div class="wx-col wx-grow" style="padding: 12px 20px 10px 20px">
