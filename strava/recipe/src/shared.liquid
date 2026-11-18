@@ -117,9 +117,9 @@
 {% template fx_hr %}
 <div class="fx-col" style="margin-top: auto; gap: 4px">
   <div class="fx-row" style="justify-content: space-between"><span class="fx-label">{{ hr.label }}</span><span style="font-size: 13px; font-weight: 700">▲ {{ hr.peak }}</span></div>
-  <svg width="100%" height="{{ hr.h }}" viewBox="0 0 {{ hr.w }} {{ hr.h }}" preserveAspectRatio="none" style="display: block; border-bottom: 2px solid #000"><line x1="0" y1="{{ hr.guide_y }}" x2="{{ hr.w }}" y2="{{ hr.guide_y }}" stroke="#000" stroke-width="1.5" stroke-dasharray="4 4"/><path d="{{ hr.path }}" fill="#000"/></svg>
-  <div class="fx-mono" style="position: relative; height: 0"><span style="position: absolute; left: 2px; top: -{{ hr.h | minus: hr.guide_y | plus: 18 }}px; font-size: 11px; font-weight: 700; background: #fff; padding: 0 3px">{{ hr.guide }}</span></div>
-  <div class="fx-ticks">{% for t in hr.ticks %}<span style="{% if forloop.last %}right: 0{% elsif forloop.first %}left: 0{% else %}left: {{ t.pct }}%; transform: translateX(-50%){% endif %}">{{ t.t }}</span>{% endfor %}</div>
+  <svg width="100%" height="{{ hr.h }}" viewBox="0 0 {{ hr.w }} {{ hr.h }}" preserveAspectRatio="none" style="display: block; border-bottom: 2px solid #000">{% if hr.guide_style == "avg" %}<path d="{{ hr.path }}" fill="#000"/><line x1="0" y1="{{ hr.guide_y }}" x2="{{ hr.w }}" y2="{{ hr.guide_y }}" stroke="#fff" stroke-width="2" stroke-dasharray="2 3"/>{% else %}<line x1="0" y1="{{ hr.guide_y }}" x2="{{ hr.w }}" y2="{{ hr.guide_y }}" stroke="#000" stroke-width="1.5" stroke-dasharray="4 4"/><path d="{{ hr.path }}" fill="#000"/>{% endif %}</svg>
+  <div class="fx-mono" style="position: relative; height: 0"><span style="position: absolute; left: 2px; top: -{{ hr.h | minus: hr.guide_y | plus: 18 }}px; font-size: 11px; font-weight: 700; background: #fff; padding: 0 3px">{{ hr.guide_text | default: hr.guide }}</span></div>
+  <div class="fx-ticks">{% for t in hr.ticks %}<span style="{% if forloop.first %}left: 0{% elsif t.pct > 94 %}right: 0{% else %}left: {{ t.pct }}%; transform: translateX(-50%){% endif %}">{{ t.t }}</span>{% endfor %}</div>
 </div>
 {% endtemplate %}
 

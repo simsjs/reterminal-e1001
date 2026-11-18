@@ -315,7 +315,8 @@ def build_last(a: dict[str, Any], detail: dict[str, Any], streams: dict[str, lis
                 "bars": [{"s": max(1, s), "pct": max(2, round(w / top * 100))} for s, w in lap_w],
             }
         elif streams.get("heartrate"):
-            out["hr"] = hr_chart(streams, hr_max)
+            # A free ride (no workout laps): heart rate with a white dotted line at the ride's average.
+            out["hr"] = hr_chart(streams, hr_max, avg=hr_avg, h=LAP_CHART_H)
 
     elif kind == "route":
         cat = category(a)
@@ -396,7 +397,9 @@ def workout_kind(desc: str) -> str:
     return m.group(1) if m else ""
 
 
-def hr_chart(streams: dict[str, list], hr_max: float | None) -> dict[str, Any]:
+def hr_chart(streams: dict[str, list], hr_max: float | None, avg: float | None = None, h: int = HR_CHART_H) -> dict[str, Any]:
+    """Heart-rate area chart. With avg, the guide is a white dotted line at that average;
+    without it, a black dashed line at a fixed 120 (or 100) bpm."""
     hr = [float(v) for v in streams.get("heartrate") or [] if v]
     times = streams.get("time") or []
     vals = downsample(hr, 120)
@@ -405,12 +408,17 @@ def hr_chart(streams: dict[str, list], hr_max: float | None) -> dict[str, Any]:
     step = 10 if mins > 25 else 5
     ticks = [{"pct": round(m / mins * 100, 1), "t": f"{m}" + (" MIN" if i == 1 else "")} for i, m in enumerate(range(0, int(mins) + 1, step))]
     guide = 120 if hi > 125 else 100
+    style = "fixed"
+    if avg:
+        guide, style = round(avg), "avg"
     return {
         "w": HR_CHART_W,
-        "h": HR_CHART_H,
-        "path": area_path(vals, HR_CHART_W, HR_CHART_H, lo, hi),
-        "guide_y": round(HR_CHART_H - (guide - lo) / (hi - lo) * (HR_CHART_H - 4), 1),
+        "h": h,
+        "path": area_path(vals, HR_CHART_W, h, lo, hi),
+        "guide_y": round(h - (guide - lo) / (hi - lo) * (h - 4), 1),
         "guide": guide,
+        "guide_style": style,
+        "guide_text": f"AVG {guide}" if style == "avg" else f"{guide}",
         "peak": f"{max(hr):.0f} bpm" if hr else "",
         "label": "Heart rate",
         "ticks": ticks,

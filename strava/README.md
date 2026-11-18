@@ -6,7 +6,7 @@ A full-screen LaraPaper recipe for the E1001 showing your training from Strava. 
 
 **Left, your latest activity.** The layout depends on what it was:
 
-- **A ride** (Zwift or outside): average power, heart rate, distance and moving time; max heart rate, climb, cadence, calories and PRs; best power for 5 seconds, 1, 5 and 20 minutes; and a chart of each lap's average power.
+- **A ride** (Zwift or outside): average power, heart rate, distance and moving time; max heart rate, climb, cadence, calories and PRs; best power for 5 seconds, 1, 5 and 20 minutes; and a chart of each lap's average power. A free ride with no workout laps shows a heart-rate chart instead, with a white dotted line at the ride's average heart rate.
 - **A run** (or a walk, hike or ruck with GPS): distance, pace, time and heart rate, a map of the route with start and finish marked, mile splits, and best mile and 5K.
 - **Anything else**, like a lifting session or a Whoop workout: duration, Whoop strain, heart rate and calories, how many strength sessions you've done in the last 30 days, and a heart-rate chart where each spike is a set.
 
