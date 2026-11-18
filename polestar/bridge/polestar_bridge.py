@@ -144,6 +144,64 @@ def _car_images(api: Any, vin: str, info: Any) -> list[dict[str, Any]]:
     return images
 
 
+# Polestar reports average consumption for each of the car's trip computers:
+#   field 3  average_energy_consumption_kwh_per_100_km               manual trip (resets only by hand)
+#   field 12 average_energy_consumption_kwh_per_100_km_automatic     automatic trip (resets after a few
+#                                                                     hours parked)
+#   field 13 average_energy_consumption_kwh_per_100_km_since_charge  since the last charge
+# pypolestar 1.12.7 keeps only the manual one, which barely moves and on some cars is nonsense
+# (Midnight reported ~0.9). We wrap its battery parser so the other two come along, then show
+# the automatic trip, falling back to since-charge and finally manual.
+_TRIP_FIELDS = (
+    ("automatic", "average_energy_consumption_kwh_per_100_km_automatic"),
+    ("since charge", "average_energy_consumption_kwh_per_100_km_since_charge"),
+)
+_last_consumption_log: dict[str, str] = {}
+
+
+def _capture_trip_averages() -> None:
+    try:
+        from pypolestar import grpc_client
+    except Exception as exc:  # library layout changed: keep working with the manual average
+        log.warning("Can't read automatic-trip consumption (%s); using the manual trip", exc)
+        return
+    original = getattr(grpc_client, "_parse_battery", None)
+    if original is None:
+        log.warning("pypolestar changed; automatic-trip consumption unavailable, using the manual trip")
+        return
+    if getattr(original, "_trip_averages", False):
+        return
+
+    def parse_battery(b: Any) -> Any:
+        data = original(b)
+        for key, field_name in _TRIP_FIELDS:
+            try:
+                object.__setattr__(data, f"_avg_{key.replace(' ', '_')}", float(getattr(b, field_name)))
+            except Exception:
+                pass
+        return data
+
+    parse_battery._trip_averages = True  # type: ignore[attr-defined]
+    grpc_client._parse_battery = parse_battery
+
+
+def _pick_consumption(vin: str, grpc_batt: Any) -> float | None:
+    """Automatic trip first, then since-charge, then manual: the first believable one wins."""
+    low, high = SANE_CONSUMPTION_KWH_100KM
+    candidates = [(key, getattr(grpc_batt, f"_avg_{key.replace(' ', '_')}", None)) for key, _ in _TRIP_FIELDS]
+    candidates.append(("manual", grpc_batt.average_energy_consumption_kwh_per_100km))
+    reported = [(k, v) for k, v in candidates if v]  # 0.0 means "not reported" in Polestar's data
+    chosen = next(((k, v) for k, v in reported if low <= v <= high), None)
+    summary = ", ".join(f"{k} {v:.1f}" for k, v in reported) or "none reported"
+    line = f"{summary} -> using {chosen[0] if chosen else 'nothing believable'}"
+    if _last_consumption_log.get(vin) != line:  # log only when the numbers change
+        log.info("Consumption kWh/100 km for VIN ...%s: %s", vin[-4:], line)
+        _last_consumption_log[vin] = line
+    if chosen:
+        return chosen[1]
+    return reported[0][1] if reported else None  # lets the "Pending" logic below handle it
+
+
 def _snapshot_from_api(api: Any, vin: str) -> CarSnapshot:
     info = api.get_car_information(vin)
     tele = api.get_car_telematics(vin)
@@ -176,7 +234,7 @@ def _snapshot_from_api(api: Any, vin: str) -> CarSnapshot:
         snap.connection = _enum_text(grpc_batt.charger_connection_status)
         snap.power_w = grpc_batt.charging_power_watts
         snap.charging_type = _enum_text(grpc_batt.charging_type)
-        snap.consumption_kwh_100km = grpc_batt.average_energy_consumption_kwh_per_100km
+        snap.consumption_kwh_100km = _pick_consumption(vin, grpc_batt)
         if grpc_batt.timestamp:
             snap.event_time = grpc_batt.timestamp
 
@@ -209,6 +267,8 @@ class PolestarPoller:
 
     async def _login(self) -> None:
         from pypolestar import PolestarApi  # imported lazily so DEMO mode needs no login
+
+        _capture_trip_averages()
 
         vins = [v.strip() for v in os.getenv("POLESTAR_VINS", "").split(",") if v.strip()] or None
         self.api = PolestarApi(

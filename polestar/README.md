@@ -5,7 +5,7 @@ A full-screen LaraPaper recipe for the E1001 showing both cars (Snow and Midnigh
 - charge %, range and charge limit
 - a **Charging** pill and completion time, shown only while charging
 - a charge bar with a limit line
-- odometer, efficiency and when the car last reported. If Polestar reports an impossible efficiency, the screen keeps the last sensible one, or shows "Pending" until one arrives.
+- odometer, efficiency and when the car last reported. Efficiency is the car's **automatic trip** average, which resets after the car has been parked a few hours, so it reflects recent driving. If the car doesn't report that, the bridge uses the since-charge average, then the manual trip. If none is believable, the screen keeps the last sensible value, or shows "Pending" until one arrives. Each time the numbers change, the bridge log prints all three, for example `docker compose logs polestar-bridge | grep Consumption`.
 
 ## How it works
 
