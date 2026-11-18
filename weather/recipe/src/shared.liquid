@@ -47,20 +47,20 @@
   .wx-alert span { display: block; font-size: 12px; font-weight: 600; margin-top: 2px; white-space: nowrap; }
   .wx-details { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; row-gap: 9px; margin-top: auto; padding-top: 11px; border-top: 2px solid #000; }
   .wx-details > div { min-width: 0; }
-  .wx-details.c2 > div:nth-child(even), .wx-details.c3 > div:not(:nth-child(3n+1)) { border-left: 2px solid #000; padding-left: 11px; }
-  .wx-details.c3 { grid-template-columns: 1fr 1fr 1fr; }
+  .wx-details.c2 > div:nth-child(even) { border-left: 2px solid #000; padding-left: 11px; }
   .wx-details .k { font: 700 11px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
   .wx-details .v { font-size: 21px; font-weight: 800; letter-spacing: -0.02em; margin-top: 4px; white-space: nowrap; }
   .wx-details .s { font-size: 12px; font-weight: 600; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* Left with a scene picture: the house for the season and weather, now in a caption box */
+  /* With a scene picture: a 2x2 grid. Picture | now, then 5 days | details. */
   .wx-sleft { flex: none; width: 460px; }
-  /* The picture takes whatever height the text below leaves: cropped from the middle, never rescaled */
-  .wx-scene { position: relative; flex: 1 1 0; min-height: 150px; border-bottom: 2px solid #000; overflow: hidden; }
+  .wx-scene { position: relative; flex: none; border-bottom: 2px solid #000; overflow: hidden; }
   .wx-scene img { display: block; width: 460px; height: 100%; object-fit: none; object-position: 50% 45%; image-rendering: pixelated; }
+  .wx-snow { flex: none; border-bottom: 2px solid #000; padding: 18px 20px 12px 20px; }
+  .wx-snow .wx-plan { max-height: none; }
   .wx-now { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
-  .wx-details.c3 .v { font-size: 19px; margin-top: 3px; }
-  .wx-details.c3 { row-gap: 7px; padding-top: 9px; margin-top: 10px; }
+  .wx-details.flush { padding-top: 0; border-top: 0; margin-top: 0; row-gap: 12px; }
+  .wx-details .full { grid-column: 1 / -1; border-left: 0 !important; padding-left: 0 !important; }
 
   /* Right: next 24 hours, then 7 days */
   .wx-right { flex: 1 1 auto; padding: 18px 22px 12px 20px; }
@@ -128,7 +128,7 @@
 </div>
 {% endtemplate %}
 
-{% template wx_details %}<div class="wx-details c{{ cols }}">{% for c in details %}<div><div class="k">{{ c.k }}</div><div class="v">{{ c.v }}</div><div class="s">{{ c.s }}</div></div>{% endfor %}</div>{% endtemplate %}
+{% template wx_details %}<div class="wx-details c{{ cols }}{% if flush %} flush{% endif %}">{% for c in details %}{% if c.id == skip %}{% continue %}{% endif %}{% if c.id == wide and c.vl %}<div class="full"><div class="k">{{ c.kl | default: c.k }}</div><div class="v">{{ c.vl }}</div><div class="s">{{ c.s }}</div></div>{% else %}<div><div class="k">{{ c.k }}</div><div class="v">{{ c.v }}</div><div class="s">{{ c.s }}</div></div>{% endif %}{% endfor %}</div>{% endtemplate %}
 
 {% template wx_right %}
 <div class="wx-col wx-right">
@@ -165,20 +165,24 @@
   <div class="wx-row" style="justify-content: space-between">
     <span class="wx-label">Next 7 days</span>
   </div>
-  <div class="wx-days">
-    {% for d in days %}
-    <div class="wx-day{% if d.today %} on{% endif %}">
-      <span class="n">{{ d.name }}</span>
-      <div style="margin-top: 6px">{% render "wx_icon", kind: d.icon, w: day_icon_w, cls: "sm" %}</div>
-      <div class="trk">{% assign bottom = d.top | plus: d.len %}
-        <span class="hi" style="bottom: calc({{ 100 | minus: d.top }}% + 4px)">{{ d.hi }}</span>
-        <div class="bar" style="top: {{ d.top }}%; height: {{ d.len }}%"></div>
-        <span class="lo" style="top: calc({{ bottom }}% + 4px)">{{ d.lo }}</span>
-      </div>
-      <span class="p">{% if d.prob != "" %}{% render "wx_drop" %}{{ d.prob }}{% endif %}</span>
+  {% render "wx_days", days: days, icon_w: day_icon_w %}
+</div>
+{% endtemplate %}
+
+{% template wx_days %}
+<div class="wx-days" style="grid-template-columns: repeat({{ days.size }}, 1fr)">
+  {% for d in days %}
+  <div class="wx-day{% if d.today %} on{% endif %}">
+    <span class="n">{{ d.name }}</span>
+    <div style="margin-top: 6px">{% render "wx_icon", kind: d.icon, w: icon_w, cls: "sm" %}</div>
+    <div class="trk">{% assign bottom = d.top | plus: d.len %}
+      <span class="hi" style="bottom: calc({{ 100 | minus: d.top }}% + 4px)">{{ d.hi }}</span>
+      <div class="bar" style="top: {{ d.top }}%; height: {{ d.len }}%"></div>
+      <span class="lo" style="top: calc({{ bottom }}% + 4px)">{{ d.lo }}</span>
     </div>
-    {% endfor %}
+    <span class="p">{% if d.prob != "" %}{% render "wx_drop" %}{{ d.prob }}{% endif %}</span>
   </div>
+  {% endfor %}
 </div>
 {% endtemplate %}
 

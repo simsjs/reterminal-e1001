@@ -7,28 +7,39 @@
       {% render "wx_error", error: error %}
     {% elsif scene %}
 
-      <!-- ── Left: a picture of the house for the season and weather, then now and the details ── -->
+      <!-- ── 2x2: the house picture | now and the plan, then 5 days | details ── -->
       <div class="wx-col wx-sleft">
-        <div class="wx-scene" style="max-height: {{ scene.h }}px">
+        <div class="wx-scene" style="height: {{ scene.h }}px">
           <img src="{{ scene.src }}" width="{{ scene.w }}" height="{{ scene.h }}" alt="">
-          {% if warning %}<span class="wx-tag" style="position: absolute; top: 8px; right: 8px; box-shadow: 0 0 0 2px #fff">Offline</span>{% endif %}
         </div>
-        <div class="wx-col" style="flex: none; padding: 0 22px 12px 22px">
-          <div class="wx-now">
-            <div class="wx-temp" style="font-size: 60px">{{ now.temp }}<sup>°</sup></div>
-            <div style="min-width: 0">
-              <div class="wx-label" style="font-size: 12px">Now · {{ place }}</div>
-              <div class="wx-cond" style="font-size: 19px; margin-top: 5px">{{ now.cond }}</div>
-              <div class="wx-hl" style="font-size: 12px; margin-top: 5px">H {{ now.hi }} · L {{ now.lo }} · FEELS {{ now.feels }}</div>
-            </div>
-          </div>
-          {% if alert %}{% render "wx_alert", alert: alert %}{% else %}<div class="wx-plan">{{ now.plan }}</div>{% endif %}
-          {% render "wx_details", details: details, cols: 3 %}
+        <div class="wx-col wx-grow" style="padding: 12px 22px 10px 22px">
+          <span class="wx-label">Next 5 days</span>
+          {% render "wx_days", days: days_short, icon_w: 36 %}
         </div>
       </div>
 
       <div class="wx-vrule"></div>
-      {% render "wx_right", h: hourly, days: days, icon_w: 26, day_icon_w: 30 %}
+
+      <div class="wx-col wx-grow">
+        <div class="wx-col wx-snow" style="height: {{ scene.h }}px">
+          <div class="wx-row" style="justify-content: space-between; gap: 10px">
+            <span class="wx-label">Now · {{ place }}</span>
+            {% if warning %}<span class="wx-tag">Offline</span>{% endif %}
+          </div>
+          <div class="wx-now">
+            <div class="wx-temp" style="font-size: 60px">{{ now.temp }}<sup>°</sup></div>
+            <div style="min-width: 0">
+              <div class="wx-cond" style="font-size: 19px; margin-top: 0">{{ now.cond }}</div>
+              <div class="wx-hl" style="font-size: 12px; margin-top: 6px">H {{ now.hi }} · L {{ now.lo }}</div>
+              <div class="wx-hl" style="font-size: 12px; margin-top: 4px">FEELS {{ now.feels }}</div>
+            </div>
+          </div>
+          {% if alert %}{% render "wx_alert", alert: alert %}{% else %}<div class="wx-plan">{{ now.plan }}</div>{% endif %}
+        </div>
+        <div class="wx-col wx-grow" style="padding: 12px 20px 10px 20px">
+          {% render "wx_details", details: details, cols: 2, skip: "precip", wide: "sun", flush: true %}
+        </div>
+      </div>
 
     {% else %}
 

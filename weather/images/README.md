@@ -2,7 +2,7 @@
 
 Pictures of the house for each season and kind of weather go here. They stay on the Pi and are ignored by git, so the house never ends up in the public repo.
 
-When there's at least one picture, the left side of the weather screen shows the one that matches right now, with the current conditions and details underneath. With no pictures, the screen uses its plain layout with a weather icon.
+When there's at least one picture, the weather screen shows the one that matches right now in its top-left corner, with the current conditions beside it, the next 5 days underneath and the details in the bottom right. With no pictures, the screen uses its plain layout with a weather icon.
 
 ## Names
 

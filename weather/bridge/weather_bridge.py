@@ -20,9 +20,11 @@ The screen shows:
     right    the next 24 hours (temperature line, chance-of-rain bars, an icon every
              3 hours) and the next 7 days
 
-With scene pictures in SCENE_DIR, the left side becomes a picture of the house that
-matches the season and the weather (snowing, snow on the ground, rain, windy, clear,
-cloudy, night), with the current conditions underneath. See weather/images/README.md.
+With scene pictures in SCENE_DIR, the screen becomes a 2x2 grid: a picture of the house
+that matches the season and the weather (snowing, snow on the ground, rain, windy, clear,
+cloudy, night) top left, now and the plan beside it, the next 5 days under the picture,
+and wind, humidity, UV, air quality and sunrise/sunset bottom right. See
+weather/images/README.md.
 
 Environment:
     WEATHER_LAT, WEATHER_LON   location, default Fairfax, VA
@@ -76,8 +78,8 @@ USER_AGENT = "reterminal-e1001 weather-bridge (github.com/simsjs/reterminal-e100
 # Pixel sizes the recipe draws with (full layout). Kept here so the template stays simple.
 HOURS = 24
 CHART_W, CHART_H = 456, 116  # next-24-hours chart
-SCENE_CHART_W = 300          # the chart is narrower when the left side is a scene picture
-SCENE_W, SCENE_H = 460, 220  # scene picture; the screen crops it to fit, never rescales
+SCENE_W, SCENE_H = 460, 220  # scene picture (top left); "now" sits beside it at the same height
+SCENE_DAYS = 5               # days under the picture
 TEMP_TOP, TEMP_BOTTOM = 22, 30  # room above the line for labels, below it for the rain bars to show
 DAYS = 7
 
@@ -337,9 +339,9 @@ def build_hourly(hours: list[dict[str, Any]], width: int = CHART_W) -> dict[str,
     return out
 
 
-def build_days(fc: dict[str, Any]) -> list[dict[str, Any]]:
+def build_days(fc: dict[str, Any], count: int = DAYS) -> list[dict[str, Any]]:
     d = fc["daily"]
-    n = min(DAYS, len(d["time"]))
+    n = min(count, len(d["time"]))
     lows = [d["temperature_2m_min"][i] for i in range(n)]
     highs = [d["temperature_2m_max"][i] for i in range(n)]
     lo, hi = min(lows), max(highs)
@@ -372,35 +374,36 @@ def build_details(fc: dict[str, Any], aq: dict[str, Any] | None, now: datetime) 
 
     wind = round(c.get("wind_speed_10m") or 0)
     gust = round(c.get("wind_gusts_10m") or 0)
-    cells.append({"k": "Wind", "v": f"{wind} mph {compass(c.get('wind_direction_10m'))}".strip() if wind else "Calm",
+    cells.append({"id": "wind", "k": "Wind", "v": f"{wind} mph {compass(c.get('wind_direction_10m'))}".strip() if wind else "Calm",
                   "s": f"gusts {gust} mph" if gust > wind + 4 else f"today up to {round(d['wind_speed_10m_max'][0])} mph"})
 
-    cells.append({"k": "Humidity", "v": f"{round(c.get('relative_humidity_2m') or 0)}%", "s": f"dew point {_deg(c.get('dew_point_2m'))}"})
+    cells.append({"id": "humidity", "k": "Humidity", "v": f"{round(c.get('relative_humidity_2m') or 0)}%", "s": f"dew point {_deg(c.get('dew_point_2m'))}"})
 
     uv_max = (d.get("uv_index_max") or [0])[0] or 0
-    cells.append({"k": "UV today", "v": f"{round(uv_max)}", "s": uv_level(uv_max)})
+    cells.append({"id": "uv", "k": "UV today", "v": f"{round(uv_max)}", "s": uv_level(uv_max)})
 
     if aq and (aq.get("current") or {}).get("us_aqi") is not None:
         aqi = aq["current"]["us_aqi"]
-        cells.append({"k": "Air quality", "v": f"{round(aqi)}", "s": aqi_level(aqi)})
+        cells.append({"id": "air", "k": "Air quality", "v": f"{round(aqi)}", "s": aqi_level(aqi)})
     else:
-        cells.append({"k": "Pressure", "v": f"{(c.get('pressure_msl') or 1013) * 0.02953:.2f}", "s": "inHg"})
+        cells.append({"id": "air", "k": "Pressure", "v": f"{(c.get('pressure_msl') or 1013) * 0.02953:.2f}", "s": "inHg"})
 
     rise, set_ = _local(d["sunrise"][0]), _local(d["sunset"][0])
     secs = int(d.get("daylight_duration", [0])[0] or (set_ - rise).total_seconds())
     if now > set_ and len(d["sunrise"]) > 1:
         rise = _local(d["sunrise"][1])
-        cells.append({"k": "Sunrise", "v": _short_clock(rise), "s": "tomorrow"})
+        cells.append({"id": "sun", "k": "Sunrise", "v": _short_clock(rise), "vl": _clock(rise), "s": "tomorrow"})
     else:
-        cells.append({"k": "Sun", "v": f"{_short_clock(rise)}–{_short_clock(set_)}", "s": f"{secs // 3600}h {secs % 3600 // 60}m of daylight"})
+        cells.append({"id": "sun", "k": "Sun", "v": f"{_short_clock(rise)}–{_short_clock(set_)}", "vl": f"↑ {_clock(rise)}  ↓ {_clock(set_)}",
+                      "kl": "Sunrise · sunset", "s": f"{secs // 3600}h {secs % 3600 // 60}m of daylight"})
 
     snow = (d.get("snowfall_sum") or [0])[0] or 0
     rain = (d.get("precipitation_sum") or [0])[0] or 0
     prob = (d.get("precipitation_probability_max") or [0])[0] or 0
     if snow >= 0.1:
-        cells.append({"k": "Snow today", "v": f"{_inches(snow)} in", "s": f"{prob}% chance"})
+        cells.append({"id": "precip", "k": "Snow today", "v": f"{_inches(snow)} in", "s": f"{prob}% chance"})
     else:
-        cells.append({"k": "Rain today", "v": f"{_inches(rain)} in", "s": f"{prob}% chance" if prob else "none expected"})
+        cells.append({"id": "precip", "k": "Rain today", "v": f"{_inches(rain)} in", "s": f"{prob}% chance" if prob else "none expected"})
     return cells
 
 
@@ -599,11 +602,12 @@ def build_panel(fc: dict[str, Any], aq: dict[str, Any] | None, alerts: dict[str,
             "plan": plan_text(hours, today, now) if hours else "",
         },
         "details": build_details(fc, aq, now),
-        "hourly": build_hourly(hours, SCENE_CHART_W if scene else CHART_W) if len(hours) >= 6 else None,
+        "hourly": build_hourly(hours) if len(hours) >= 6 else None,
         "days": build_days(fc),
     }
     if scene:
         panel["scene"] = scene
+        panel["days_short"] = build_days(fc, SCENE_DAYS)
     alert = build_alert(alerts, now)
     if alert:
         panel["alert"] = alert
