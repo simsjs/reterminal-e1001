@@ -1,19 +1,6 @@
-# Content for the Morning Brief and This Week screens that doesn't come from a
-# calendar or weather.
+# Content for the This Week screen that doesn't come from a calendar.
 # Edit, commit and push; the board picks up changes on its next refresh
 # (this folder is mounted into the container, so no rebuild is needed).
-
-# Three tiles at the bottom of the morning brief.
-tiles:
-  - label: Training
-    value: Easy 4 mi
-    detail: Zone 2 · 126–156
-  - label: Inbox
-    value: 3 need you
-    detail: 41 in bulk label
-  - label: Job search
-    value: 5 new roles
-    detail: Top fit 87 / 100
 
 # Shown along the bottom of This Week (first 4) only until Google Tasks is set
 # up (see "Reminders from Google Tasks" in the README). After that, this list

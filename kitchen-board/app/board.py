@@ -8,7 +8,6 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 import calendar_data
 import config
 import tasks_data
-import weather
 
 _env = Environment(
     loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates")),
@@ -26,8 +25,6 @@ PLACEHOLDER_PREVIEW = {
     "%%BATTERY%%": "86",
     "%%BATTERY_FILL%%": "17",
     "%%WIFI_CLASS%%": "wifi-3",
-    "%%IN_TEMP%%": "68°F",
-    "%%IN_RH%%": "41%",
 }
 
 
@@ -62,38 +59,6 @@ def _common(page: str, n: datetime, content: dict) -> dict:
         "updated": clock_ampm(n),
         "font_base": config.FONT_BASE_URL,
         "sample": calendar_data.using_sample(),
-    }
-
-
-def build_brief(n: datetime) -> dict:
-    content = load_content()
-    today = n.date()
-    events = calendar_data.events_between(today, today + timedelta(days=1), include_brief_only=True)
-
-    rows, next_marked = [], False
-    for e in events:
-        done = e.end is not None and e.end < n
-        is_next = False
-        if not next_marked and e.start is not None and e.start >= n:
-            is_next = next_marked = True
-        rows.append({"time": clock(e.start) if e.start else "", "title": e.title,
-                     "done": done, "next": is_next, "all_day": e.all_day})
-
-    total = len(rows)
-    while len(rows) > 5 and rows[0]["done"]:   # drop finished items first
-        rows.pop(0)
-    rows = rows[:5]
-
-    tiles = (content.get("tiles") or [])[:3]
-    return {
-        **_common("brief", n, content),
-        "title": "MORNING BRIEF",
-        "weekday": n.strftime("%A").upper(),
-        "date_label": f"{n.strftime('%b')} {n.day}",
-        "weather": weather.get_weather(n),
-        "rows": rows,
-        "total": total,
-        "tiles": tiles,
     }
 
 
@@ -139,7 +104,7 @@ def build_week(n: datetime) -> dict:
     today = n.date()
     first = today - timedelta(days=WEEK_DAYS_BEFORE)
     count = WEEK_DAYS_BEFORE + 1 + WEEK_DAYS_AFTER
-    events = calendar_data.events_between(first, first + timedelta(days=count), include_brief_only=False)
+    events = calendar_data.events_between(first, first + timedelta(days=count))
 
     days = []
     for i in range(count):
@@ -177,7 +142,7 @@ def build_week(n: datetime) -> dict:
     }
 
 
-BUILDERS = {"brief": build_brief, "week": build_week}
+BUILDERS = {"week": build_week}
 
 
 def render(page: str, preview: bool = False) -> str:

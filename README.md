@@ -1,8 +1,8 @@
 # reTerminal E1001 screens
 
 Screens for a Seeed reTerminal E1001 running TRMNL firmware, served by
-[LaraPaper](https://github.com/usetrmnl/larapaper) on a Raspberry Pi: two calendar
-screens (This Week, plus Morning Brief, which is paused for now), plus a Polestar status screen (see [`polestar/`](polestar/README.md)), a
+[LaraPaper](https://github.com/usetrmnl/larapaper) on a Raspberry Pi: a calendar
+screen (This Week), a Polestar status screen (see [`polestar/`](polestar/README.md)), a
 home energy screen for Dominion Energy (see [`dominion/`](dominion/README.md)), a
 fitness screen from Strava (see [`strava/`](strava/README.md)) and a weather screen
 (see [`weather/`](weather/README.md)).
@@ -14,21 +14,13 @@ fitness screen from Strava (see [`strava/`](strava/README.md)) and a weather scr
 
 ![This week](kitchen-board/preview/week.png)
 
-**Morning Brief** (date, weather, today's events, three tiles) is paused while
-it gets more work. It still renders at `http://localhost:4568/brief` for
-previews, but it isn't in a playlist and doesn't get a header dot. To bring it
-back, set `BRIEF_ENABLED=on` and put `brief` at the front of `SCREEN_ORDER` in
-`.env`, then add a Morning playlist in LaraPaper.
-
 ## How it fits together
 
-- `kitchen-board/` is a small Python service. It pulls weather from
-  [Open-Meteo](https://open-meteo.com/) (no API key), reads calendars from
-  private iCal links, holidays from Google's public US holiday calendar,
-  reminders from Google Tasks, and tiles and personal countdowns from
-  `content/content.yml`.
-  It renders the HTML for both screens and serves it as JSON at `/api/brief`
-  and `/api/week`.
+- `kitchen-board/` is a small Python service for the This Week screen. It
+  reads calendars from private iCal links, holidays from Google's public US
+  holiday calendar, reminders from Google Tasks, and personal countdowns from
+  `content/content.yml`. It renders the screen's HTML and serves it as JSON at
+  `/api/week`. It also serves the header fonts for every screen.
 - `larapaper/docker-compose.yml` runs LaraPaper, the calendar screens, the
   Polestar bridge, the Dominion bridge, the Strava bridge and the weather bridge
   together.
@@ -65,27 +57,19 @@ back, set `BRIEF_ENABLED=on` and put `brief` at the front of `SCREEN_ORDER` in
 
    Log in to LaraPaper. Your account and the E1001 should still be there.
 
-2. **Check the previews** at `http://localhost:4568/brief` and
-   `http://localhost:4568/week` (see "Previews and raw data" below for how to
+2. **Check the preview** at `http://localhost:4568/week` (see "Previews and raw data" below for how to
    open them from your laptop).
 
 3. **Set up LaraPaper.**
    - Set your profile timezone to **America/New_York**. Playlists and sleep
      mode use it.
-   - Create two recipes:
-
-     | Name | Polling URL |
-     | --- | --- |
-     | Morning Brief | `http://kitchen-board:8080/api/brief` |
-     | This Week | `http://kitchen-board:8080/api/week` |
-
-     For both, use the **Polling** data strategy and the **Liquid** markup
+   - Create a recipe called **This Week** with the polling URL
+     `http://kitchen-board:8080/api/week`. Use the **Polling** data strategy and the **Liquid** markup
      language. Paste `kitchen-board/recipes/kitchen-board.liquid` as the
      full-screen markup and refresh every 15 minutes. Turn on "no screen
      padding" if that option appears.
    - On the E1001's device page, add a **Day** playlist, active 06:00–22:00,
-     containing This Week. (Morning Brief is paused, so skip that recipe and
-     the Morning playlist for now.)
+     containing This Week.
    - Turn on **sleep mode** from 22:00 to 06:00.
    - Set the refresh rate to **900 seconds** (15 minutes).
 
@@ -94,12 +78,10 @@ back, set `BRIEF_ENABLED=on` and put `brief` at the front of `SCREEN_ORDER` in
 Put private iCal links in `larapaper/.env`, comma-separated, then run
 `docker compose up -d`:
 
-- `CALENDAR_ICS_URLS` feed both screens. For Google Calendar, use Settings →
+- `CALENDAR_ICS_URLS` feed This Week. For Google Calendar, use Settings →
   your calendar → *Secret address in iCal format*.
-- `BRIEF_ONLY_ICS_URLS` only show on the morning brief, which suits a work
-  calendar.
 
-Until a link is set, both screens show a sample week, marked
+Until a link is set, This Week shows a sample week, marked
 **SAMPLE CALENDAR** in the bottom-right corner.
 
 ## Reminders from Google Tasks
@@ -154,11 +136,6 @@ needs updating. You can add your own dates (birthdays, trips) to `countdowns:`
 in `content.yml`; whichever is sooner is shown. `HOLIDAY_SHOW_WITHIN_DAYS` in
 `.env` changes the 60-day window.
 
-## Tiles
-
-The Morning Brief tiles are a hand-written list, not pulled from any app. Edit `kitchen-board/content/content.yml`. After a `git pull`, changes show up
-on the next refresh without a rebuild.
-
 ## Page dots
 
 The dots at the top left of every screen come from one setting in
@@ -203,13 +180,10 @@ cd larapaper && docker compose up -d --build
 
 ## Notes and troubleshooting
 
-- **Inside temperature and humidity** come from the E1001's onboard sensor,
-  but only if the TRMNL firmware reports those readings to LaraPaper.
-  Otherwise the box shows `--`.
 - **The recipe says the data isn't available, but the preview works:** check
   the polling URL. If LaraPaper won't fetch from the container name, set
   `LOCAL_BIND=0.0.0.0` in `.env`, run `docker compose up -d`, and use
-  `http://<pi-ip>:4568/api/brief` and `/api/week` instead.
+  `http://<pi-ip>:4568/api/week` instead.
 - **HTML tags show up as text:** switch the recipe's markup language to Blade
   and paste `recipes/kitchen-board.blade.php` instead.
 - **Fonts look generic:** LaraPaper's renderer can't reach the fonts. Set

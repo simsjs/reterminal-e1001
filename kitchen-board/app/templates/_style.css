@@ -16,40 +16,6 @@
 /* Header: shared with the other screens, see shared/header.css */
 {% include "_header.css" %}
 
-/* ---------- Morning brief ---------- */
-.kb .left { position: absolute; left: 0; top: 44px; width: 300px; height: 436px; border-right: 3px solid #000; }
-.kb .dow { position: absolute; left: 22px; top: 21px; font: 700 15px/1 "KB Mono", monospace; letter-spacing: 3px; }
-.kb .bigdate { position: absolute; left: 19px; top: 37px; font: 700 84px/1 "KB Grotesk", sans-serif; letter-spacing: -4.4px; white-space: nowrap; }
-.kb .wx-icon { position: absolute; left: 24px; top: 132px; width: 64px; height: 56px; }
-.kb .wx-icon * { fill: none; stroke: #000; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-.kb .wx-temp { position: absolute; left: 99px; top: 126px; font: 700 61px/1 "KB Grotesk", sans-serif; letter-spacing: -2px; }
-.kb .wx-hl { position: absolute; left: 100px; top: 186px; font: 400 14px/1 "KB Mono", monospace; letter-spacing: 1px; }
-.kb .wx-sum { position: absolute; left: 22px; top: 216px; width: 238px; font: 400 18px/1.32 "KB Grotesk", sans-serif; }
-.kb .wx-none { position: absolute; left: 22px; top: 150px; width: 250px; font: 400 16px/1.35 "KB Grotesk", sans-serif; }
-.kb .inside { position: absolute; left: 22px; top: 316px; width: 253px; height: 100px; background: #000; color: #fff; padding: 13px 14px 0 14px; }
-.kb .inside-lbl { font: 700 12.5px/1.35 "KB Mono", monospace; letter-spacing: 1.4px; width: 150px; }
-.kb .inside-temp { position: absolute; left: 13px; bottom: 9px; font: 700 41px/1 "KB Grotesk", sans-serif; letter-spacing: -1px; }
-.kb .inside-rh { position: absolute; left: 179px; top: 35px; font: 700 21px/1.27 "KB Grotesk", sans-serif; letter-spacing: -0.5px; }
-
-.kb .right { position: absolute; left: 322px; top: 44px; width: 456px; height: 436px; }
-.kb .today-hd { position: absolute; left: 0; top: 19px; width: 456px; height: 25px; border-bottom: 3.5px solid #000;
-  display: flex; justify-content: space-between; font: 700 14px/1 "KB Mono", monospace; letter-spacing: 1.5px; }
-.kb .rows { position: absolute; left: 0; top: 44px; width: 456px; }
-.kb .row { position: relative; height: 46px; display: flex; align-items: center; }
-.kb .row + .row::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
-  background: radial-gradient(circle, #000 0.9px, transparent 1.15px) 0 0 / 4.6px 2px repeat-x; }
-.kb .row-time { width: 76px; font: 700 17px/1 "KB Mono", monospace; }
-.kb .row-title { flex: 1; font: 500 20px/1 "KB Grotesk", sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.kb .row.done .row-title, .kb .row.done .row-time { text-decoration: line-through; text-decoration-thickness: 2px; }
-.kb .next { background: #000; color: #fff; font: 700 13px/1 "KB Mono", monospace; letter-spacing: 1.6px; padding: 5px 7px 5px 8px; margin-left: 8px; }
-.kb .empty { font: 400 18px/1.4 "KB Grotesk", sans-serif; padding-top: 14px; }
-
-.kb .tiles { position: absolute; left: 0; top: 305px; width: 456px; display: flex; gap: 10px; }
-.kb .tile { flex: 1; height: 111px; border: 3px solid #000; padding: 12px 11px 0 11px; overflow: hidden; }
-.kb .tile-lbl { font: 400 12.5px/1 "KB Mono", monospace; letter-spacing: 2.2px; }
-.kb .tile-val { margin-top: 6px; font: 700 22.5px/1.2 "KB Grotesk", sans-serif; letter-spacing: -0.3px; }
-.kb .tile-det { margin-top: 2px; font: 500 13.5px/1.25 "KB Grotesk", sans-serif; }
-
 /* ---------- This week ---------- */
 .kb .wk-title { position: absolute; left: 20px; top: 59px; font: 700 31px/1 "KB Grotesk", sans-serif; letter-spacing: -1.2px; }
 .kb .wk-count { position: absolute; right: 21px; top: 76px; font: 700 14px/1 "KB Mono", monospace; letter-spacing: 1.1px; }

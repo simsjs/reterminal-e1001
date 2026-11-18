@@ -1,7 +1,7 @@
-"""Tiny HTTP server for the calendar screens (Morning Brief and This Week).
+"""Tiny HTTP server for the This Week calendar screen.
 
-  /api/brief, /api/week  JSON {"html": ...} that LaraPaper recipes poll
-  /brief, /week          full pages to preview in a browser
+  /api/week              JSON {"html": ...} that the LaraPaper recipe polls
+  /week                  the full page, to preview in a browser
   /fonts/<file>          fonts for the renderer
   /healthz               liveness check
 """
@@ -38,16 +38,16 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         path = self.path.split("?", 1)[0].rstrip("/") or "/"
         try:
-            if path in ("/api/brief", "/api/week"):
-                page = path.rsplit("/", 1)[1]
+            if path == "/api/week":
+                page = "week"
                 payload = {
                     "html": board.render_fragment(page),
                     "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                     "sample_data": board.calendar_data.using_sample(),
                 }
                 self._send(200, json.dumps(payload).encode(), "application/json")
-            elif path in ("/brief", "/week"):
-                page = path[1:]
+            elif path == "/week":
+                page = "week"
                 html = PREVIEW_SHELL.format(title=page, body=board.render(page, preview=True))
                 self._send(200, html.encode(), "text/html; charset=utf-8")
             elif path.startswith("/fonts/"):
@@ -63,7 +63,7 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/healthz":
                 self._send(200, b"ok", "text/plain")
             elif path == "/":
-                links = '<p><a href="/brief">brief</a> · <a href="/week">week</a></p>'
+                links = '<p><a href="/week">week</a></p>'
                 self._send(200, PREVIEW_SHELL.format(title="calendar screens", body=links).encode(),
                            "text/html; charset=utf-8")
             else:

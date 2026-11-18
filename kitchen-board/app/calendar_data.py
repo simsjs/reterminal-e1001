@@ -21,7 +21,7 @@ class Event:
     day: date
     start: datetime | None = None   # None for all-day events
     end: datetime | None = None
-    source: str = "main"            # "main" or "brief"
+    source: str = "main"            # "main" or "holiday"
     key: tuple = field(default=())
 
     @property
@@ -91,8 +91,7 @@ def _sample(week_start: date) -> list[Event]:
         at(0, 6, 30, 45, "Zwift · 45 min"), at(0, 17, 30, 45, "Swim lessons"),
         at(1, 7, 0, 35, "Run · 3.35 mi"), allday(1, "Library day"),
         allday(2, "Veterans Day"), allday(2, "Trash night"),
-        at(3, 7, 45, 20, "Drop-off"), at(3, 9, 30, 15, "Team standup", "brief"),
-        at(3, 12, 15, 40, "Easy run · 4 mi"), at(3, 15, 0, 30, "Recruiter call", "brief"),
+        at(3, 7, 45, 20, "Drop-off"), at(3, 12, 15, 40, "Easy run · 4 mi"),
         at(3, 17, 30, 20, "Pickup"),
         at(4, 6, 0, 30, "Lift · 30 min"), allday(4, "Pizza night"),
         at(5, 8, 0, 60, "Long run · 6.5 mi"), allday(5, "Bike ride with the kids"),
@@ -105,10 +104,10 @@ def using_sample() -> bool:
         return True
     if config.SAMPLE_DATA == "off":
         return False
-    return not (config.CALENDAR_ICS_URLS or config.BRIEF_ONLY_ICS_URLS)
+    return not config.CALENDAR_ICS_URLS
 
 
-def events_between(start: date, end: date, include_brief_only: bool) -> list[Event]:
+def events_between(start: date, end: date) -> list[Event]:
     """Events with start <= day < end, deduplicated and sorted (timed first)."""
     if using_sample():
         events, week_start = [], start - timedelta(days=start.weekday())
@@ -117,20 +116,14 @@ def events_between(start: date, end: date, include_brief_only: bool) -> list[Eve
             week_start += timedelta(days=7)
     else:
         events = []
-        sources = [(u, "main") for u in config.CALENDAR_ICS_URLS]
-        if include_brief_only:
-            sources += [(u, "brief") for u in config.BRIEF_ONLY_ICS_URLS]
-        for url, source in sources:
+        for url in config.CALENDAR_ICS_URLS:
             body = _fetch(url)
             if body is None:
                 continue
             try:
-                events += _from_ics(body, start, end, source)
+                events += _from_ics(body, start, end, "main")
             except Exception as exc:
                 log.warning("calendar parse failed: %s", exc)
-
-    if not include_brief_only:
-        events = [e for e in events if e.source == "main"]
 
     seen, unique = set(), []
     for e in events:

@@ -42,17 +42,13 @@ services:
     environment:
       - TZ=${TZ:-America/New_York}
       - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather}   # page dots, see README
-      - WEATHER_LAT=${WEATHER_LAT:-38.8462}
-      - WEATHER_LON=${WEATHER_LON:--77.3064}
       - CALENDAR_ICS_URLS=${CALENDAR_ICS_URLS:-}
-      - BRIEF_ONLY_ICS_URLS=${BRIEF_ONLY_ICS_URLS:-}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       - GOOGLE_TASKS_REFRESH_TOKEN=${GOOGLE_TASKS_REFRESH_TOKEN:-}
       - TASKS_LISTS=${TASKS_LISTS:-}
       - TASKS_DAYS_AHEAD=${TASKS_DAYS_AHEAD:-7}
       - TASKS_INCLUDE_UNDATED=${TASKS_INCLUDE_UNDATED:-off}
-      - BRIEF_ENABLED=${BRIEF_ENABLED:-off}
       - FONT_BASE_URL=${FONT_BASE_URL:-http://kitchen-board:8080}
     volumes:
       # A folder mount, so edits to content.yml show up after a git pull.

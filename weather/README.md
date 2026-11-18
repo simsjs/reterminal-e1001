@@ -40,7 +40,7 @@ The pictures stay on the Pi and out of git. File names and the rules for which o
 
 `bridge/` runs a small Python service (`weather-bridge` in `larapaper/docker-compose.yml`). Every 15 minutes it asks three free services that need no account or API key:
 
-- [Open-Meteo](https://open-meteo.com/) for the current conditions and the hourly and daily forecast (the same source as the Morning Brief)
+- [Open-Meteo](https://open-meteo.com/) for the current conditions and the hourly and daily forecast
 - Open-Meteo's air-quality API for the US AQI
 - the National Weather Service's [alerts API](https://www.weather.gov/documentation/services-web-api) for active watches, warnings and advisories at your location
 
