@@ -21,9 +21,14 @@ fitness screen from Strava (see [`strava/`](strava/README.md)) and a weather scr
   holiday calendar, reminders from Google Tasks, and personal countdowns from
   `content/content.yml`. It renders the screen's HTML and serves it as JSON at
   `/api/week`. It also serves the header fonts for every screen.
-- `larapaper/docker-compose.yml` runs LaraPaper, the calendar screens, the
-  Polestar bridge, the Dominion bridge, the Strava bridge and the weather bridge
-  together.
+- `larapaper/docker-compose.yml` runs LaraPaper, the calendar screen, the
+  `bridges` service and (until they move into it) the Polestar, Dominion and
+  Strava bridges together.
+- `bridges/` is one Python service for the screens that need outside data. Each
+  screen is its own module there (so far `weather.py`) with its own routes,
+  token and refresh loop; one screen failing doesn't stop the others.
+  `http://localhost:4572/health` shows each screen's status. LaraPaper still
+  reaches each screen by its old name (`weather-bridge`, ...).
 - `polestar/` holds the Polestar status screen: a small bridge service that
   reads both cars from Polestar, and its LaraPaper recipe. Setup is in
   [`polestar/README.md`](polestar/README.md).
@@ -33,9 +38,9 @@ fitness screen from Strava (see [`strava/`](strava/README.md)) and a weather scr
 - `strava/` holds the fitness screen: a small bridge that reads your
   activities from the Strava API, and its LaraPaper recipe. Setup is in
   [`strava/README.md`](strava/README.md).
-- `weather/` holds the weather screen: a small bridge that reads the forecast
-  from Open-Meteo, air quality, and National Weather Service alerts, and its
-  LaraPaper recipe. Setup is in [`weather/README.md`](weather/README.md).
+- `weather/` holds the weather screen's LaraPaper recipe and pictures. Its data
+  (forecast from Open-Meteo, air quality, and National Weather Service alerts)
+  comes from `bridges/weather.py`. Setup is in [`weather/README.md`](weather/README.md).
 - In LaraPaper, one recipe per screen polls that JSON. The markup in
   `recipes/kitchen-board.liquid` fills in battery, Wi-Fi and onboard-sensor
   values. LaraPaper's playlists and sleep mode handle the schedule.

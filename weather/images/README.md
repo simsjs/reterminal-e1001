@@ -36,6 +36,6 @@ scp *.jpg pi@<pi-ip>:~/reterminal-e1001/weather/images/
 
 The bridge notices new or changed files on its next refresh (within 15 minutes). There's no need to restart it.
 
-The bridge trims the outer 3% (for hand-drawn frames), crops to the panel and converts the picture to black and white for e-ink. Wide pictures (about 16:9) work best, with the house in the middle. If the crop cuts off too much at the top or bottom, set `SCENE_FOCUS` on `weather-bridge` (0 keeps the top, 1 keeps the bottom; the default is 0.45).
+The bridge trims the outer 3% (for hand-drawn frames), crops to the panel and converts the picture to black and white for e-ink. Wide pictures (about 16:9) work best, with the house in the middle. If the crop cuts off too much at the top or bottom, set `WEATHER_SCENE_FOCUS` in `larapaper/.env` and add it to the `bridges` service's environment (0 keeps the top, 1 keeps the bottom; the default is 0.45).
 
 To check a picture, set `WEATHER_SCENE=rain` (or any other name) in `larapaper/.env`, run `docker compose up -d`, and look at the screen. Set it back to `auto` afterwards.

@@ -118,25 +118,32 @@ services:
       # The newest Strava refresh token (Strava can hand out a new one on any refresh).
       - strava:/data
 
-  weather-bridge:
-    build: ../weather/bridge
+  # One service for the screens that need outside data. Each screen keeps its
+  # own routes and token; the aliases keep the recipes' old Bridge URLs working.
+  bridges:
+    build: ../bridges
     restart: unless-stopped
+    networks:
+      default:
+        aliases:
+          - weather-bridge
     ports:
-      - "${LOCAL_BIND:-127.0.0.1}:4572:8765"   # raw data, from the Pi only: http://localhost:4572/weather.json
+      - "${LOCAL_BIND:-127.0.0.1}:4572:8765"   # weather raw data, from the Pi only: http://localhost:4572/weather.json
     environment:
       - TZ=${TZ:-America/New_York}
       - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather}   # page dots, see README
+      # Weather screen
       - WEATHER_LAT=${WEATHER_LAT:-38.8462}
       - WEATHER_LON=${WEATHER_LON:--77.3064}
       - WEATHER_PLACE=${WEATHER_PLACE:-Fairfax}
-      - BRIDGE_TOKEN=${WEATHER_BRIDGE_TOKEN:-}
-      - REFRESH_MINUTES=${WEATHER_REFRESH_MINUTES:-15}
-      - ALERTS=${WEATHER_ALERTS:-on}
-      - SCENE=${WEATHER_SCENE:-auto}
-      - DEMO=${WEATHER_DEMO:-0}
+      - WEATHER_BRIDGE_TOKEN=${WEATHER_BRIDGE_TOKEN:-}
+      - WEATHER_REFRESH_MINUTES=${WEATHER_REFRESH_MINUTES:-15}
+      - WEATHER_ALERTS=${WEATHER_ALERTS:-on}
+      - WEATHER_SCENE=${WEATHER_SCENE:-auto}
+      - WEATHER_DEMO=${WEATHER_DEMO:-0}
     volumes:
       # Your own pictures of the house for each season and weather (not in git).
-      - ../weather/images:/app/images:ro
+      - ../weather/images:/app/images/weather:ro
 
 volumes:
   database:

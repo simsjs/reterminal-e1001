@@ -38,7 +38,7 @@ The pictures stay on the Pi and out of git. File names and the rules for which o
 
 ## How it works
 
-`bridge/` runs a small Python service (`weather-bridge` in `larapaper/docker-compose.yml`). Every 15 minutes it asks three free services that need no account or API key:
+The weather screen is one part of the `bridges` service (`bridges/weather.py`; `bridges` in `larapaper/docker-compose.yml`, which LaraPaper still reaches as `weather-bridge`). Every 15 minutes it asks three free services that need no account or API key:
 
 - [Open-Meteo](https://open-meteo.com/) for the current conditions and the hourly and daily forecast
 - Open-Meteo's air-quality API for the US AQI
@@ -66,7 +66,7 @@ It turns all that into ready-to-draw JSON for LaraPaper, including the house pic
 
    ```bash
    docker compose up -d --build
-   docker compose logs -f weather-bridge   # look for "Refreshed: 38°F, Partly cloudy"
+   docker compose logs -f bridges   # look for "weather: Refreshed: 38°F, Partly cloudy"
    ```
 
 3. **Import the recipe in LaraPaper.** Go to Plugins → Add Recipe → Import Recipe Archive and upload `weather/weather-recipe.zip` (download it from GitHub). Then open its settings:
@@ -94,6 +94,6 @@ It turns all that into ready-to-draw JSON for LaraPaper, including the house pic
 
 ## When it stops working
 
-- **"No weather data yet":** the bridge hasn't reached Open-Meteo since it started. Check that the Pi is online, then look at `docker compose logs weather-bridge`.
+- **"No weather data yet":** the bridge hasn't reached Open-Meteo since it started. Check that the Pi is online, then look at `docker compose logs bridges | grep weather`.
 - **Offline tag in the corner:** the last refresh failed and the screen is showing the forecast from the time in the header. It tries again every 15 minutes.
-- **No alert box during a storm you know about:** the National Weather Service only issues alerts for some hazards. Check `docker compose logs weather-bridge | grep NWS` for fetch errors.
+- **No alert box during a storm you know about:** the National Weather Service only issues alerts for some hazards. Check `docker compose logs bridges | grep NWS` for fetch errors.

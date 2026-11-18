@@ -1,5 +1,5 @@
 """
-Weather -> LaraPaper bridge for the Weather screen.
+Weather screen for the bridges service (was weather-bridge).
 
 Pulls the forecast from Open-Meteo (free, no API key), the US air quality index from
 Open-Meteo's air-quality API, and active watches and warnings from the National Weather
@@ -9,7 +9,7 @@ that a LaraPaper (TRMNL BYOS) recipe polls.
     GET /weather.json       panel data (what the recipe uses)
     GET /health
 
-Auth: if BRIDGE_TOKEN is set, send `Authorization: Bearer <BRIDGE_TOKEN>` (or ?token=...).
+Auth: if WEATHER_BRIDGE_TOKEN is set, send `Authorization: Bearer <token>` (or ?token=...).
 Weather isn't private, so the token is optional. /health is always open.
 
 The screen shows:
@@ -29,15 +29,15 @@ weather/images/README.md.
 Environment:
     WEATHER_LAT, WEATHER_LON   location, default Fairfax, VA
     WEATHER_PLACE              name shown on the screen, default Fairfax
-    BRIDGE_TOKEN               optional shared secret LaraPaper sends
-    REFRESH_MINUTES            background refresh interval, default 15 (minimum 5)
-    ALERTS                     "off" to skip National Weather Service alerts
+    WEATHER_BRIDGE_TOKEN       optional shared secret LaraPaper sends
+    WEATHER_REFRESH_MINUTES    background refresh interval, default 15 (minimum 5)
+    WEATHER_ALERTS             "off" to skip National Weather Service alerts
     TZ                         IANA time zone, default America/New_York
-    SCENE_DIR                  folder of scene pictures, default /app/images
-    SCENE                      "auto" (default) picks a picture from the weather, "off" never
+    WEATHER_SCENE_DIR          folder of scene pictures, default /app/images/weather
+    WEATHER_SCENE              "auto" (default) picks a picture from the weather, "off" never
                                shows one, or a picture name (e.g. "rain") always shows that one
-    SCENE_FOCUS                0-1, which part of a tall picture to keep (0 = top), default 0.45
-    DEMO                       "1" to serve made-up data without going online
+    WEATHER_SCENE_FOCUS        0-1, which part of a tall picture to keep (0 = top), default 0.45
+    WEATHER_DEMO               "1" to serve made-up data without going online
 """
 
 from __future__ import annotations
@@ -49,29 +49,30 @@ import logging
 import math
 import os
 import random
-import secrets
 from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-log = logging.getLogger("weather-bridge")
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
+from common import check_token, flag, page_info, refresh_forever, setting
+
+NAME = "weather"
+log = logging.getLogger("weather")
 
 TZ_NAME = os.getenv("TZ") or "America/New_York"
 TZ = ZoneInfo(TZ_NAME)
 LAT = float(os.getenv("WEATHER_LAT") or 38.8462)
 LON = float(os.getenv("WEATHER_LON") or -77.3064)
 PLACE = (os.getenv("WEATHER_PLACE") or "Fairfax").strip()
-BRIDGE_TOKEN = os.getenv("BRIDGE_TOKEN", "")
-REFRESH_MINUTES = max(5, int(os.getenv("REFRESH_MINUTES", "15") or 15))
-ALERTS = os.getenv("ALERTS", "on").strip().lower() not in ("0", "off", "no", "false")
-DEMO = os.getenv("DEMO", "0").strip().lower() in ("1", "true", "yes", "on")
-SCENE_DIR = os.getenv("SCENE_DIR", "/app/images")
-SCENE_MODE = (os.getenv("SCENE") or "auto").strip().lower()
+BRIDGE_TOKEN = setting("WEATHER", "BRIDGE_TOKEN")
+REFRESH_MINUTES = max(5, int(setting("WEATHER", "REFRESH_MINUTES", "15") or 15))
+ALERTS = setting("WEATHER", "ALERTS", "on").strip().lower() not in ("0", "off", "no", "false")
+DEMO = flag("WEATHER", "DEMO")
+SCENE_DIR = setting("WEATHER", "SCENE_DIR", "/app/images/weather")
+SCENE_MODE = (setting("WEATHER", "SCENE") or "auto").strip().lower()
 
 USER_AGENT = "reterminal-e1001 weather-bridge (github.com/simsjs/reterminal-e1001)"
 
@@ -510,7 +511,7 @@ def eink_scene_png(path: str, width: int = SCENE_W, height: int = SCENE_H) -> by
     im = im.crop((ix, iy, im.width - ix, im.height - iy))
     scale = max(width / im.width, height / im.height)
     im = im.resize((round(im.width * scale), round(im.height * scale)), Image.Resampling.LANCZOS)
-    focus = float(os.getenv("SCENE_FOCUS") or (0.45 if im.width / im.height > 1.6 else 0.38))
+    focus = float(setting("WEATHER", "SCENE_FOCUS") or (0.45 if im.width / im.height > 1.6 else 0.38))
     x = (im.width - width) // 2
     y = round((im.height - height) * min(max(focus, 0.0), 1.0))
     im = im.crop((x, y, x + width, y + height))
@@ -737,57 +738,14 @@ class Source:
 
 
 source = Source()
-app = FastAPI(title="weather-bridge")
+router = APIRouter()
 
 
-async def _loop() -> None:
-    while True:
-        try:
-            await source.refresh()
-        except Exception as err:  # keep serving the last good data
-            source.error = f"{type(err).__name__}: {err}"
-            log.warning("Refresh failed: %s", source.error)
-        await asyncio.sleep(REFRESH_MINUTES * 60)
+def start() -> list:
+    return [refresh_forever(source, REFRESH_MINUTES, log)]
 
 
-@app.on_event("startup")
-async def _start() -> None:
-    asyncio.create_task(_loop())
-
-
-def _check(request: Request) -> None:
-    if not BRIDGE_TOKEN:
-        return
-    got = request.headers.get("authorization", "").removeprefix("Bearer ").strip() or request.query_params.get("token", "")
-    if not secrets.compare_digest(got, BRIDGE_TOKEN):
-        raise HTTPException(401, "bad token")
-
-
-SCREEN_NAME = "weather"
-
-
-# Page dots: SCREEN_ORDER lists the screens in playlist order (same setting for
-# every service). This screen's dot number and the total go out with the data.
-def _page_info() -> dict:
-    order = [s.strip().lower() for s in os.environ.get("SCREEN_ORDER", "").split(",") if s.strip()]
-    if SCREEN_NAME not in order:
-        return {}
-    return {"page_number": order.index(SCREEN_NAME) + 1, "page_count": len(order)}
-
-
-@app.get("/weather.json")
-async def weather_json(request: Request) -> JSONResponse:
-    _check(request)
-    if source.panel:
-        out = dict(source.panel)
-        if source.error:
-            out["warning"] = "Couldn't reach Open-Meteo; showing data from " + out.get("as_of", "earlier")
-        return JSONResponse({**out, **_page_info()})
-    return JSONResponse({"ok": False, "error": source.error or "Starting up…", **_page_info()})
-
-
-@app.get("/health")
-async def health() -> dict[str, Any]:
+def health() -> dict[str, Any]:
     return {
         "ok": source.error is None and source.panel is not None,
         "demo": DEMO,
@@ -796,7 +754,12 @@ async def health() -> dict[str, Any]:
     }
 
 
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8765")))
+@router.get("/weather.json")
+async def weather_json(request: Request) -> JSONResponse:
+    check_token(request, BRIDGE_TOKEN)
+    if source.panel:
+        out = dict(source.panel)
+        if source.error:
+            out["warning"] = "Couldn't reach Open-Meteo; showing data from " + out.get("as_of", "earlier")
+        return JSONResponse({**out, **page_info(NAME)})
+    return JSONResponse({"ok": False, "error": source.error or "Starting up…", **page_info(NAME)})
