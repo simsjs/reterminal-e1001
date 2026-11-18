@@ -18,8 +18,11 @@ Name each file for the weather it shows. `.jpg`, `.jpeg`, `.png` and `.webp` all
 | `cloudy.jpg` | partly cloudy, cloudy or foggy |
 | `spring.jpg` | any dry day in April and May (leafy trees) |
 | `summer.jpg` | any dry day from June to September |
+| `night.jpg` | after dark on a dry evening (clear, cloudy or windy), any season |
 
 `clear`, `cloudy` and `windy` have bare trees, so they cover October to March.
+
+After dark, rain, snow and snow on the ground keep their own pictures. To give those a night version too, add `night-rain.jpg`, `night-snowing.jpg` or `night-snow-cover.jpg`. A `winter-night.jpg` (bare trees) would replace the leafy night picture from December to March. "After dark" comes from Open-Meteo's day/night flag for your location, so it follows sunset through the year.
 
 You can add more specific pictures later as `<season>-<weather>.jpg`, for example `summer-rain.jpg` or `winter-clear.jpg`. Seasons are `spring` (Apr–May), `summer` (Jun–Sep), `fall` (Oct–Nov) and `winter` (Dec–Mar). The most specific picture wins. If a picture is missing, the screen uses the closest one: `windy` falls back to `cloudy`, `snow-cover` to `cloudy`, `snowing` to `snow-cover`, and so on.
 

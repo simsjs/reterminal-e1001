@@ -22,7 +22,7 @@ The screen shows:
 
 With scene pictures in SCENE_DIR, the left side becomes a picture of the house that
 matches the season and the weather (snowing, snow on the ground, rain, windy, clear,
-cloudy), with the current conditions in a caption box. See weather/images/README.md.
+cloudy, night), with the current conditions underneath. See weather/images/README.md.
 
 Environment:
     WEATHER_LAT, WEATHER_LON   location, default Fairfax, VA
@@ -456,10 +456,22 @@ def _scene_file(name: str) -> str | None:
     return None
 
 
-def pick_scene_file(kind: str, when: str) -> str | None:
-    """Most specific first: summer-rain, then summer (any dry day), then rain, then fallbacks."""
-    names = [f"{when}-{kind}"]
-    if when in ("spring", "summer") and kind in ("clear", "cloudy", "windy"):
+DRY = ("clear", "cloudy", "windy")
+
+
+def pick_scene_file(kind: str, when: str, night: bool = False) -> str | None:
+    """Most specific first: summer-rain, then summer (any dry day), then rain, then fallbacks.
+
+    After dark, a night picture wins on dry evenings (winter-night, then night). Rain, snow
+    and snow on the ground keep their own pictures unless there's a night-rain and so on.
+    """
+    names = []
+    if night:
+        names += [f"{when}-night-{kind}", f"night-{kind}"]
+        if kind in DRY:
+            names += [f"{when}-night", "night"]
+    names.append(f"{when}-{kind}")
+    if when in ("spring", "summer") and kind in DRY:
         names.append(when)  # one leafy picture covers any dry day
     names += SCENE_FALLBACKS.get(kind, [kind])
     if when in ("spring", "summer"):
@@ -532,7 +544,8 @@ def choose_scene(fc: dict[str, Any], hours: list[dict[str, Any]], now: datetime)
     if SCENE_MODE != "auto":
         path = _scene_file(SCENE_MODE)
     else:
-        path = pick_scene_file(scene_kind(fc, hours, snow_depth_inches(fc)), season(now))
+        night = not bool((fc.get("current") or {}).get("is_day", 1))
+        path = pick_scene_file(scene_kind(fc, hours, snow_depth_inches(fc)), season(now), night)
     return load_scene(path) if path else None
 
 

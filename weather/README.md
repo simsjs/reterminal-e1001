@@ -25,7 +25,7 @@ The previews use made-up data.
 
 ## Pictures of the house
 
-Add drawings of the house for each season and kind of weather to `weather/images/` on the Pi, and the left side becomes that picture: snowing, snow on the ground, rain, windy, clear or cloudy, with leafy versions for spring and summer. The current temperature, conditions, plan (or alert) and the six details sit underneath in three columns, and the 24-hour chart and 7-day forecast move into a narrower right side. The picture gives up some height when an alert or a two-line plan needs the room. It's cropped from the middle, never rescaled, so the dithering stays crisp.
+Add drawings of the house for each season and kind of weather to `weather/images/` on the Pi, and the left side becomes that picture: snowing, snow on the ground, rain, windy, clear or cloudy, with leafy versions for spring and summer and a night picture for dry evenings. The current temperature, conditions, plan (or alert) and the six details sit underneath in three columns, and the 24-hour chart and 7-day forecast move into a narrower right side. The picture gives up some height when an alert or a two-line plan needs the room. It's cropped from the middle, never rescaled, so the dithering stays crisp.
 
 The pictures stay on the Pi and out of git. File names and the rules for which one shows are in [`images/README.md`](images/README.md). Without any pictures, the screen uses the layout shown above.
 
