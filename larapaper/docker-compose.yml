@@ -1,4 +1,4 @@
-# LaraPaper (TRMNL server) + the calendar screens, Polestar, home energy and fitness screens, on the Raspberry Pi.
+# LaraPaper (TRMNL server) + the calendar screens, Polestar, home energy, fitness and weather screens, on the Raspberry Pi.
 #
 #   cd ~/reterminal-e1001/larapaper
 #   cp .env.example .env   # then fill it in
@@ -43,7 +43,7 @@ services:
       - TASKS_INCLUDE_UNDATED=${TASKS_INCLUDE_UNDATED:-off}
       - BRIEF_ENABLED=${BRIEF_ENABLED:-off}
       - FONT_BASE_URL=${FONT_BASE_URL:-http://kitchen-board:8080}
-      - PAGE_COUNT=${KB_PAGE_COUNT:-4}   # header dots: This Week + Polestar + home energy + fitness
+      - PAGE_COUNT=${KB_PAGE_COUNT:-5}   # header dots: This Week + Polestar + home energy + fitness + weather
     volumes:
       # A folder mount, so edits to content.yml show up after a git pull.
       - ../kitchen-board/content:/app/content:ro
@@ -108,6 +108,21 @@ services:
     volumes:
       # The newest Strava refresh token (Strava can hand out a new one on any refresh).
       - strava:/data
+
+  weather-bridge:
+    build: ../weather/bridge
+    restart: unless-stopped
+    ports:
+      - "4572:8765"   # raw data: http://<pi-ip>:4572/weather.json
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - WEATHER_LAT=${WEATHER_LAT:-38.8462}
+      - WEATHER_LON=${WEATHER_LON:--77.3064}
+      - WEATHER_PLACE=${WEATHER_PLACE:-Fairfax}
+      - BRIDGE_TOKEN=${WEATHER_BRIDGE_TOKEN:-}
+      - REFRESH_MINUTES=${WEATHER_REFRESH_MINUTES:-15}
+      - ALERTS=${WEATHER_ALERTS:-on}
+      - DEMO=${WEATHER_DEMO:-0}
 
 volumes:
   database:

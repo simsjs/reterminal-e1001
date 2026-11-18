@@ -1,0 +1,44 @@
+---
+name: Weather
+id: 5d1a9c3e-2f7b-4e8a-b6c4-9e0f3a7d1b58
+strategy: polling
+polling_verb: get
+polling_url: "{{ bridge_url }}/weather.json"
+polling_headers: authorization=Bearer {{ bridge_token }}
+polling_body: ''
+refresh_interval: 15
+no_screen_padding: 'no'
+dark_mode: 'no'
+static_data: ''
+framework_version: latest
+custom_fields:
+- keyname: about
+  field_type: author_bio
+  name: About
+  description: Current conditions, the plan for the next few hours, any National Weather Service alert, wind, humidity, UV, air quality, sunrise and sunset, a 24-hour chart and a 7-day forecast, from Open-Meteo (no API key). Needs the small weather-bridge service running on your network (see weather/README.md).
+- keyname: bridge_url
+  field_type: url
+  name: Bridge URL
+  description: Where weather-bridge is running, without a trailing slash. In this repo's Docker setup it's http://weather-bridge:8765.
+  placeholder: http://weather-bridge:8765
+  default: http://weather-bridge:8765
+- keyname: bridge_token
+  field_type: password
+  name: Bridge token
+  description: The WEATHER_BRIDGE_TOKEN value from larapaper/.env. Leave empty if you didn't set one.
+  optional: true
+- keyname: page_number
+  field_type: number
+  name: Page dot
+  description: Which header dot is filled for this screen (This Week is 1, Polestar is 2, home energy is 3, fitness is 4).
+  default: 5
+- keyname: page_count
+  field_type: number
+  name: Total pages
+  description: How many dots the header shows.
+  default: 5
+- keyname: font_base
+  field_type: url
+  name: Header font source
+  description: Where the header font is loaded from. The kitchen-board container serves it.
+  default: http://kitchen-board:8080

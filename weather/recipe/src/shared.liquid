@@ -1,0 +1,122 @@
+{% assign wx_font = trmnl.plugin_settings.custom_fields_values.font_base | default: "http://kitchen-board:8080" %}
+<style>
+  /* Header row: same look as the calendar, Polestar, home energy and fitness screens (fonts are served by the kitchen-board container) */
+  @font-face { font-family: "KB Mono"; src: url("{{ wx_font }}/fonts/SpaceMono-Bold.ttf") format("truetype"); font-weight: 700; }
+  @font-face { font-family: "KB Mono"; src: url("{{ wx_font }}/fonts/SpaceMono-Regular.ttf") format("truetype"); font-weight: 400; }
+  .wxx { position: fixed; top: 0; left: 0; z-index: 2147483647; width: 800px; height: 480px; overflow: hidden; background: #fff; color: #000; }
+  .wxx-body { position: absolute; top: 44px; left: 0; width: 800px; height: 436px; display: flex; }
+  .wx-hdr { position: absolute; left: 0; top: 0; width: 800px; height: 44px; border-bottom: 3px solid #000; box-sizing: border-box;
+    display: flex; align-items: center; padding: 0 21px 0 20px; color: #000; }
+  .wx-hdr .dots { display: flex; gap: 6px; margin-right: 13px; }
+  .wx-hdr .dot { width: 10px; height: 10px; border: 2px solid #000; border-radius: 50%; box-sizing: border-box; }
+  .wx-hdr .dot.on { background: #000; }
+  .wx-hdr .hdr-title { font: 700 14px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.8px; }
+  .wx-hdr .hdr-right { margin-left: auto; display: flex; align-items: center; font: 700 14px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.8px; }
+  .wx-hdr .wifi { margin: 0 14px 0 14px; width: 21px; height: 16px; }
+  .wx-hdr .wifi path { fill: none; stroke: #000; stroke-width: 2.6; stroke-linecap: round; }
+  .wx-hdr .wifi circle { fill: #000; }
+  .wx-hdr .wifi-2 .w3, .wx-hdr .wifi-1 .w3, .wx-hdr .wifi-1 .w2 { stroke-width: 1.5; stroke-dasharray: 2 1.8; stroke-linecap: butt; }
+  .wx-hdr .batt { position: relative; width: 27px; height: 14px; border: 2.5px solid #000; border-radius: 3px; margin-right: 9px; box-sizing: border-box; }
+  .wx-hdr .batt::after { content: ""; position: absolute; right: -5px; top: 3px; width: 2.5px; height: 4px; background: #000; border-radius: 0 1px 1px 0; }
+  .wx-hdr .batt-fill { position: absolute; left: 1.5px; top: 1.5px; bottom: 1.5px; background: #000; }
+
+  /* Weather panel: pure black and white so it stays crisp on 1-bit e-ink (gray drops out). */
+  .wx { box-sizing: border-box; display: flex; width: 100%; height: 100%; color: #000; font-family: "Inter", "Helvetica Neue", Arial, sans-serif; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .wx * { box-sizing: border-box; }
+  .wx-col { display: flex; flex-direction: column; min-width: 0; }
+  .wx-row { display: flex; align-items: baseline; }
+  .wx-grow { flex: 1 1 auto; min-width: 0; }
+  .wx-label { font: 700 13px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+  .wx-mono { font-family: "KB Mono", "Courier New", monospace; }
+  .wx-rule { border-top: 2px solid #000; }
+  .wx-vrule { border-left: 2px solid #000; }
+  .wx-ic { display: block; flex: none; }
+  .wx-ic * { fill: none; stroke: #000; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+  .wx-ic.sm * { stroke-width: 3.6; }
+
+  /* Left: now */
+  .wx-left { flex: none; width: 300px; padding: 18px 22px 14px 22px; }
+  .wx-hero { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .wx-temp { font-weight: 800; font-size: 96px; letter-spacing: -0.05em; line-height: 0.8; white-space: nowrap; }
+  .wx-temp sup { font-size: 0.5em; vertical-align: top; position: relative; top: -0.08em; letter-spacing: 0; margin-left: 0.02em; }
+  .wx-cond { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-top: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wx-hl { font: 400 14px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.5px; margin-top: 6px; white-space: nowrap; }
+  .wx-plan { font-size: 15px; font-weight: 500; line-height: 1.28; margin-top: 10px; max-height: 39px; overflow: hidden; }
+  .wx-alert { display: flex; align-items: center; gap: 9px; margin-top: 10px; background: #000; color: #fff; border-radius: 6px; padding: 6px 10px 6px 8px; }
+  .wx-alert b { display: block; font-size: 15px; font-weight: 800; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wx-alert span { display: block; font-size: 12px; font-weight: 600; margin-top: 2px; white-space: nowrap; }
+  .wx-details { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; row-gap: 9px; margin-top: auto; padding-top: 11px; border-top: 2px solid #000; }
+  .wx-details > div { min-width: 0; }
+  .wx-details > div:nth-child(even) { border-left: 2px solid #000; padding-left: 11px; }
+  .wx-details .k { font: 700 11px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+  .wx-details .v { font-size: 21px; font-weight: 800; letter-spacing: -0.02em; margin-top: 4px; white-space: nowrap; }
+  .wx-details .s { font-size: 12px; font-weight: 600; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Right: next 24 hours, then 7 days */
+  .wx-right { flex: 1 1 auto; padding: 18px 22px 12px 20px; }
+  .wx-note { font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .wx-icons { position: relative; height: 30px; margin-top: 8px; }
+  .wx-icons .wx-ic { position: absolute; top: 0; transform: translateX(-50%); }
+  .wx-chart { position: relative; margin-top: 4px; border-bottom: 2px solid #000; }
+  .wx-chart svg { display: block; }
+  .wx-chart .t { position: absolute; transform: translateX(-50%); font-size: 13px; font-weight: 800; background: #fff; padding: 0 2px; line-height: 1; white-space: nowrap; }
+  .wx-chart .fz { position: absolute; right: 0; font: 700 10px/1 "KB Mono", "Courier New", monospace; background: #fff; padding: 0 0 0 3px; }
+  .wx-axis { position: relative; height: 16px; font: 400 11px/1 "KB Mono", "Courier New", monospace; }
+  .wx-axis span { position: absolute; top: 4px; transform: translateX(-50%); white-space: nowrap; }
+  .wx-axis span::before { content: ""; position: absolute; left: 50%; top: -6px; height: 4px; border-left: 2px solid #000; }
+  .wx-axis span.on { font-weight: 700; }
+  .wx-key { display: flex; align-items: center; gap: 5px; font: 400 11px/1 "KB Mono", "Courier New", monospace; white-space: nowrap; }
+  .wx-key i { display: inline-block; width: 12px; height: 10px; }
+
+  .wx-days { display: grid; grid-template-columns: repeat(7, 1fr); flex: 1 1 auto; margin-top: 8px; }
+  .wx-day { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+  .wx-day + .wx-day { border-left: 1.5px dashed #000; }
+  .wx-day .n { font: 700 12px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.04em; }
+  .wx-day.on .n { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  .wx-day .trk { position: relative; flex: 1 1 auto; align-self: stretch; margin: 28px 0 24px; min-height: 30px; }
+  .wx-day .trk .bar { position: absolute; left: 50%; width: 10px; margin-left: -5px; background: #000; border-radius: 5px; }
+  .wx-day.on .trk .bar { background: repeating-linear-gradient(135deg, #000 0 2px, #fff 2px 5px); border: 2px solid #000; }
+  .wx-day .hi, .wx-day .lo { position: absolute; left: 0; right: 0; text-align: center; line-height: 1; letter-spacing: -0.02em; }
+  .wx-day .hi { font-size: 19px; font-weight: 800; }
+  .wx-day .lo { font-size: 15px; font-weight: 600; }
+  .wx-day .p { display: flex; align-items: center; gap: 3px; height: 14px; margin-top: 5px; font: 700 11px/1 "KB Mono", "Courier New", monospace; }
+
+  .wx-tag { display: inline-flex; align-items: center; background: #000; color: #fff; font-weight: 700; font-size: 12px; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+  .wx-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; }
+</style>
+
+{% template wx_header %}{% assign pn = cfv.page_number | default: 5 | plus: 0 %}{% assign pc = cfv.page_count | default: 5 | plus: 0 %}{% if pc < pn %}{% assign pc = pn %}{% endif %}{% assign batt = device.percent_charged | default: 0 | round %}{% assign fill = batt | times: 20 | divided_by: 100 | round %}{% assign ws = device.wifi_strength | default: 3 %}{% if ws >= 3 %}{% assign wc = "wifi-3" %}{% elsif ws == 2 %}{% assign wc = "wifi-2" %}{% else %}{% assign wc = "wifi-1" %}{% endif %}
+<div class="wx-hdr">
+  <div class="dots">{% for i in (1..pc) %}<div class="dot{% if i == pn %} on{% endif %}"></div>{% endfor %}</div>
+  <div class="hdr-title">WEATHER</div>
+  <div class="hdr-right">
+    {% if as_of %}<span>UPDATED {{ as_of | upcase }}</span>{% endif %}
+    <svg class="wifi {{ wc }}" viewBox="0 0 21 16"><path class="w3" d="M1.6 5.6a12.6 12.6 0 0 1 17.8 0"/><path class="w2" d="M4.6 8.7a8.3 8.3 0 0 1 11.8 0"/><circle cx="10.5" cy="13.2" r="2.1"/></svg>
+    <div class="batt"><div class="batt-fill" style="width:{{ fill }}px"></div></div>
+    <span>{{ batt }}%</span>
+  </div>
+</div>
+{% endtemplate %}
+
+{% template wx_icon %}<svg class="wx-ic{% if cls %} {{ cls }}{% endif %}" width="{{ w }}" height="{{ w | times: 52 | divided_by: 60 }}" viewBox="0 0 60 52"{% if left %} style="left: {{ left }}%"{% endif %}>{% case kind %}
+{% when "sun" %}<circle cx="30" cy="26" r="10"/><path d="M30 6v6M30 40v6M10 26h6M44 26h6M15.9 11.9l4.2 4.2M39.9 35.9l4.2 4.2M15.9 40.1l4.2-4.2M39.9 16.1l4.2-4.2"/>
+{% when "moon" %}<path d="M36 9.5A17 17 0 1 0 47.5 36 13.5 13.5 0 0 1 36 9.5z"/>
+{% when "partly" %}<path d="M13 6.5v4.5M2.5 17h4.5M5.3 9.3l3 3M20.7 9.3l-3 3"/><path d="M8.5 22.5a7 7 0 1 1 12.4-6"/><path d="M17 47.5h28a8.5 8.5 0 0 0 1-16.9 12.5 12.5 0 0 0-24.3-1.8A9.5 9.5 0 0 0 17 47.5z"/>
+{% when "partly-night" %}<path d="M15 5a10 10 0 1 0 8.5 13.5A8 8 0 0 1 15 5z"/><path d="M17 47.5h28a8.5 8.5 0 0 0 1-16.9 12.5 12.5 0 0 0-24.3-1.8A9.5 9.5 0 0 0 17 47.5z"/>
+{% when "rain" %}<path d="M15 33h28a8.5 8.5 0 0 0 1-16.9 12.5 12.5 0 0 0-24.3-1.8A9.5 9.5 0 0 0 15 33z"/><path d="M20 39l-3 7M30 39l-3 7M40 39l-3 7"/>
+{% when "sleet" %}<path d="M15 33h28a8.5 8.5 0 0 0 1-16.9 12.5 12.5 0 0 0-24.3-1.8A9.5 9.5 0 0 0 15 33z"/><path d="M20 39l-3 7M40 39l-3 7M29 39v8M25.5 41l7 4M32.5 41l-7 4"/>
+{% when "snow" %}<path d="M15 33h28a8.5 8.5 0 0 0 1-16.9 12.5 12.5 0 0 0-24.3-1.8A9.5 9.5 0 0 0 15 33z"/><path d="M20 39v8M16.5 41l7 4M23.5 41l-7 4M38 39v8M34.5 41l7 4M41.5 41l-7 4"/>
+{% when "storm" %}<path d="M15 33h28a8.5 8.5 0 0 0 1-16.9 12.5 12.5 0 0 0-24.3-1.8A9.5 9.5 0 0 0 15 33z"/><path d="M31 36l-5 8h7l-4 7"/>
+{% when "fog" %}<path d="M15 27h28a8.5 8.5 0 0 0 1-16.9 12.5 12.5 0 0 0-24.3-1.8A9.5 9.5 0 0 0 15 27z"/><path d="M10 35h38M14 42h34M10 49h30"/>
+{% else %}<path d="M12 42h32a10 10 0 0 0 1.2-19.9A14.5 14.5 0 0 0 17 20.3 11 11 0 0 0 12 42z"/>
+{% endcase %}</svg>{% endtemplate %}
+
+{% template wx_drop %}<svg width="8" height="11" viewBox="0 0 8 11"><path d="M4 0.5C4 0.5 0.5 5 0.5 7a3.5 3.5 0 0 0 7 0C7.5 5 4 0.5 4 0.5z" fill="#000"/></svg>{% endtemplate %}
+
+{% template wx_error %}
+<div class="wx-empty">
+  <svg viewBox="0 0 24 24" width="64" height="64"><path d="M12 1.5 0.8 21.5h22.4zM10.8 8.5h2.4l-.3 7h-1.8zm1.2 8.8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill-rule="evenodd"/></svg>
+  <div style="font-size: 30px; font-weight: 700">No weather data yet</div>
+  <div style="font-size: 15px; font-weight: 500; max-width: 560px">{% if error %}{{ error | truncate: 140 }}{% else %}Check that weather-bridge is running and the Bridge URL is set in this recipe.{% endif %}</div>
+</div>
+{% endtemplate %}

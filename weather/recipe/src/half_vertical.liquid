@@ -1,0 +1,29 @@
+<div class="view view--half_vertical">
+  <div class="layout" style="padding: 0">
+    <div class="wx wx-col" style="padding: 12px 18px 8px; gap: 10px">
+    {% if ok != true %}
+      {% render "wx_error", error: error %}
+    {% else %}
+      <div class="wx-hero" style="margin-top: 0">
+        {% render "wx_icon", kind: now.icon, w: 64 %}
+        <div class="wx-temp" style="font-size: 64px">{{ now.temp }}<sup>°</sup></div>
+      </div>
+      <div class="wx-cond" style="margin-top: 0; font-size: 20px">{{ now.cond }}</div>
+      <div class="wx-hl" style="margin-top: 0">H {{ now.hi }} · L {{ now.lo }} · FEELS {{ now.feels }}</div>
+      {% if alert %}<div class="wx-tag" style="align-self: flex-start">{{ alert.event }}</div>{% else %}<div style="font-size: 15px; font-weight: 500; line-height: 1.28">{{ now.plan }}</div>{% endif %}
+      {% for d in days limit: 4 offset: 1 %}
+      <div class="wx-row" style="align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 4px; gap: 8px">
+        <span class="wx-label" style="width: 40px">{{ d.name }}</span>
+        {% render "wx_icon", kind: d.icon, w: 26, cls: "sm" %}
+        <span style="margin-left: auto; font-size: 18px; font-weight: 800">{{ d.hi }}</span>
+        <span style="font-size: 15px; font-weight: 600; width: 34px; text-align: right">{{ d.lo }}</span>
+      </div>
+      {% endfor %}
+    {% endif %}
+    </div>
+  </div>
+  <div class="title_bar">
+    <span class="title">Weather</span>
+    <span class="instance">{{ place }}</span>
+  </div>
+</div>

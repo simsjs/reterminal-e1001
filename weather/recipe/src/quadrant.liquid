@@ -1,0 +1,20 @@
+<div class="view view--quadrant">
+  <div class="layout" style="padding: 0">
+    <div class="wx" style="align-items: center; gap: 12px; padding: 8px 16px 6px">
+    {% if ok != true %}
+      <div class="wx-empty"><div style="font-size: 22px; font-weight: 700">No weather data</div></div>
+    {% else %}
+      {% render "wx_icon", kind: now.icon, w: 60 %}
+      <div class="wx-col" style="gap: 4px">
+        <div class="wx-temp" style="font-size: 52px">{{ now.temp }}<sup>°</sup></div>
+        <div style="font-size: 15px; font-weight: 700">{{ now.cond }}</div>
+        <div class="wx-hl" style="margin-top: 0">H {{ now.hi }} · L {{ now.lo }}</div>
+      </div>
+    {% endif %}
+    </div>
+  </div>
+  <div class="title_bar">
+    <span class="title">Weather</span>
+    <span class="instance">{{ place }}</span>
+  </div>
+</div>

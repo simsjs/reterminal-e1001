@@ -1,0 +1,93 @@
+<div class="view view--full">
+  <div class="wxx">
+  {% render "wx_header", device: trmnl.device, cfv: trmnl.plugin_settings.custom_fields_values, as_of: as_of %}
+  <div class="wxx-body">
+    <div class="wx">
+    {% if ok != true %}
+      {% render "wx_error", error: error %}
+    {% else %}
+
+      <!-- ── Left: right now, the plan or an alert, then the details ─────── -->
+      <div class="wx-col wx-left">
+        <div class="wx-row" style="justify-content: space-between; gap: 10px">
+          <span class="wx-label">Now · {{ place }}</span>
+          {% if warning %}<span class="wx-tag">Offline</span>{% else %}<span class="wx-label">Feels {{ now.feels }}</span>{% endif %}
+        </div>
+        <div class="wx-hero">
+          {% render "wx_icon", kind: now.icon, w: 82 %}
+          <div class="wx-temp">{{ now.temp }}<sup>°</sup></div>
+        </div>
+        <div class="wx-cond">{{ now.cond }}</div>
+        <div class="wx-hl">H {{ now.hi }} · L {{ now.lo }}</div>
+        {% if alert %}
+        <div class="wx-alert">
+          <svg viewBox="0 0 24 24" width="24" height="24" style="flex: none"><path d="M12 1.5 0.8 21.5h22.4zM10.8 8.5h2.4l-.3 7h-1.8zm1.2 8.8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill="#fff" fill-rule="evenodd"/></svg>
+          <div style="min-width: 0"><b>{{ alert.event }}</b><span>{{ alert.when }}{% if alert.more > 0 %} · +{{ alert.more }} more{% endif %}</span></div>
+        </div>
+        {% else %}
+        <div class="wx-plan">{{ now.plan }}</div>
+        {% endif %}
+
+        <div class="wx-details">
+          {% for c in details %}<div><div class="k">{{ c.k }}</div><div class="v">{{ c.v }}</div><div class="s">{{ c.s }}</div></div>{% endfor %}
+        </div>
+      </div>
+
+      <div class="wx-vrule"></div>
+
+      <!-- ── Right: next 24 hours, then the week ──────────────────────────── -->
+      <div class="wx-col wx-right">
+        {% if hourly %}{% assign h = hourly %}
+        <div class="wx-row" style="justify-content: space-between; gap: 10px">
+          <span class="wx-label">Next 24 hours</span>
+          <span class="wx-note">{{ h.note }}</span>
+        </div>
+        <div class="wx-icons">{% for m in h.marks %}{% render "wx_icon", kind: m.icon, w: 30, cls: "sm", left: m.pct %}{% endfor %}</div>
+        <div class="wx-chart" style="height: {{ h.h }}px">
+          <svg width="{{ h.w }}" height="{{ h.h }}" viewBox="0 0 {{ h.w }} {{ h.h }}">
+            <defs>
+              <pattern id="wx-rain" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="5" fill="#000"/></pattern>
+              <pattern id="wx-night" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="1" height="1" fill="#000"/></pattern>
+            </defs>
+            {% for n in h.nights %}<rect x="{{ n.x }}" y="0" width="{{ n.w }}" height="{{ h.h }}" fill="url(#wx-night)"/>{% endfor %}
+            {% for b in h.bars %}<rect x="{{ b.x }}" y="{{ h.h | minus: b.h }}" width="{{ b.w }}" height="{{ b.h }}" fill="url(#wx-rain)" stroke="#000" stroke-width="1.5"/>{% endfor %}
+            {% if h.freeze_y %}<line x1="0" y1="{{ h.freeze_y }}" x2="{{ h.w }}" y2="{{ h.freeze_y }}" stroke="#000" stroke-width="1.5" stroke-dasharray="4 4"/>{% endif %}
+            <path d="{{ h.path }}" fill="none" stroke="#fff" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+            <path d="{{ h.path }}" fill="none" stroke="#000" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+            {% for m in h.marks %}<circle cx="{{ m.x }}" cy="{{ m.y }}" r="3.5" fill="#000" stroke="#fff" stroke-width="2"/>{% endfor %}
+          </svg>
+          {% if h.freeze_y %}<span class="fz" style="top: {{ h.freeze_y | minus: 5 }}px">32°</span>{% endif %}
+          {% for m in h.marks %}<span class="t" style="left: {% if forloop.first %}0; transform: none{% else %}{{ m.pct }}%{% endif %}; top: {{ m.y | minus: 19 }}px">{{ m.temp }}</span>{% endfor %}
+        </div>
+        <div class="wx-axis">{% for m in h.marks %}<span{% if forloop.first %} class="on"{% endif %} style="left: {{ m.pct }}%{% if forloop.first %}; transform: translateX(-30%){% endif %}">{{ m.label }}</span>{% endfor %}</div>
+        <div class="wx-row" style="justify-content: flex-end; gap: 14px; margin-top: 2px">
+          <span class="wx-key"><i style="background: repeating-linear-gradient(135deg, #000 0 2px, #fff 2px 4px); border: 1.5px solid #000"></i>RAIN / SNOW CHANCE</span>
+          <span class="wx-key"><i style="background-image: radial-gradient(#000 0.7px, transparent 0.8px); background-size: 4px 4px; border: 1.5px solid #000"></i>NIGHT</span>
+        </div>
+        {% endif %}
+
+        <div class="wx-rule" style="margin: 8px 0 10px"></div>
+        <div class="wx-row" style="justify-content: space-between">
+          <span class="wx-label">Next 7 days</span>
+        </div>
+        <div class="wx-days">
+          {% for d in days %}
+          <div class="wx-day{% if d.today %} on{% endif %}">
+            <span class="n">{{ d.name }}</span>
+            <div style="margin-top: 6px">{% render "wx_icon", kind: d.icon, w: 34, cls: "sm" %}</div>
+            <div class="trk">{% assign bottom = d.top | plus: d.len %}
+              <span class="hi" style="bottom: calc({{ 100 | minus: d.top }}% + 4px)">{{ d.hi }}</span>
+              <div class="bar" style="top: {{ d.top }}%; height: {{ d.len }}%"></div>
+              <span class="lo" style="top: calc({{ bottom }}% + 4px)">{{ d.lo }}</span>
+            </div>
+            <span class="p">{% if d.prob != "" %}{% render "wx_drop" %}{{ d.prob }}{% endif %}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    {% endif %}
+    </div>
+  </div>
+  </div>
+</div>
