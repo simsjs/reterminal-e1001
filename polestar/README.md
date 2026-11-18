@@ -70,6 +70,6 @@ Image layout can be tuned with `POLESTAR_PHOTO_WIDTH`, `POLESTAR_PHOTO_ZOOM`, `P
 
 ## Notes
 
-- pypolestar is unofficial. If Polestar changes its side, the screen shows "No Polestar data yet" until the library catches up. When that happens, bump the version in `bridge/requirements.txt`.
+- pypolestar is unofficial. If Polestar changes its side, the screen shows "No Polestar data yet" until the library catches up. When that happens, bump the version in `bridges/requirements.txt` and rebuild.
 - Fields a car doesn't report are left off the screen. For example, older Polestar 2s may not report the charge limit or charging power.
 - The header font loads from the kitchen-board container (which serves the calendar screens), so both screens use the same type.

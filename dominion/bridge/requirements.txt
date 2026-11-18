@@ -1,4 +1,0 @@
-dompower==0.2.2   # unofficial Dominion Energy client (pulls in aiohttp and openpyxl)
-fastapi>=0.115
-uvicorn>=0.30
-pillow>=10        # only used for the logo

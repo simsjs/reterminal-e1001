@@ -26,14 +26,16 @@ from typing import Any
 
 from fastapi import FastAPI, Request
 
-import polestar
-import strava
-import weather
-
+# Set up logging before the screens are imported: some load pictures on import.
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("bridges")
 
-SCREENS = [weather, strava, polestar]
+import dominion  # noqa: E402
+import polestar  # noqa: E402
+import strava  # noqa: E402
+import weather  # noqa: E402
+
+SCREENS = [weather, strava, polestar, dominion]
 
 
 @asynccontextmanager

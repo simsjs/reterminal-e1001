@@ -54,25 +54,6 @@ services:
       # A folder mount, so edits to content.yml show up after a git pull.
       - ../kitchen-board/content:/app/content:ro
 
-  dominion-bridge:
-    build: ../dominion/bridge
-    restart: unless-stopped
-    ports:
-      - "${LOCAL_BIND:-127.0.0.1}:4570:8765"   # raw data, from the Pi only: http://localhost:4570/dominion.json?token=<DOMINION_BRIDGE_TOKEN>
-    environment:
-      - TZ=${TZ:-America/New_York}
-      - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather}   # page dots, see README
-      - BRIDGE_TOKEN=${DOMINION_BRIDGE_TOKEN:-}
-      - DOMINION_ACCOUNT=${DOMINION_ACCOUNT:-}
-      - DOMINION_METER=${DOMINION_METER:-}
-      - REFRESH_MINUTES=${DOMINION_REFRESH_MINUTES:-120}
-      - DEMO=${DOMINION_DEMO:-0}
-      - LOGO_FILE=/app/images/logo.png
-    volumes:
-      # Tokens and login cookies from the one-time `dompower login` (see dominion/README.md).
-      - dominion:/data
-      - ../dominion/images:/app/images:ro
-
   # One service for the screens that need outside data. Each screen keeps its
   # own routes and token; the aliases keep the recipes' old Bridge URLs working.
   bridges:
@@ -84,13 +65,17 @@ services:
           - weather-bridge
           - strava-bridge
           - polestar-bridge
+          - dominion-bridge
     ports:
       - "${LOCAL_BIND:-127.0.0.1}:4569:8765"   # Polestar car images page, from the Pi only: http://localhost:4569/images?token=<POLESTAR_BRIDGE_TOKEN>
+      - "${LOCAL_BIND:-127.0.0.1}:4570:8765"   # home energy raw data, from the Pi only: http://localhost:4570/dominion.json?token=<DOMINION_BRIDGE_TOKEN>
       - "${LOCAL_BIND:-127.0.0.1}:4571:8765"   # fitness raw data, from the Pi only: http://localhost:4571/fitness.json?token=<STRAVA_BRIDGE_TOKEN>
       - "${LOCAL_BIND:-127.0.0.1}:4572:8765"   # weather raw data, from the Pi only: http://localhost:4572/weather.json
     environment:
       - TZ=${TZ:-America/New_York}
       - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather}   # page dots, see README
+      # dompower (Dominion's login tool) keeps its files in HOME.
+      - HOME=/data/dominion
       # Weather screen
       - WEATHER_LAT=${WEATHER_LAT:-38.8462}
       - WEATHER_LON=${WEATHER_LON:--77.3064}
@@ -119,6 +104,12 @@ services:
       - POLESTAR_REFRESH_MINUTES=${POLESTAR_REFRESH_MINUTES:-10}
       - POLESTAR_DEMO=${POLESTAR_DEMO:-0}
       - POLESTAR_BATTERY_KWH=${POLESTAR_BATTERY_KWH:-}
+      # Home energy screen (Dominion)
+      - DOMINION_BRIDGE_TOKEN=${DOMINION_BRIDGE_TOKEN:-}
+      - DOMINION_ACCOUNT=${DOMINION_ACCOUNT:-}
+      - DOMINION_METER=${DOMINION_METER:-}
+      - DOMINION_REFRESH_MINUTES=${DOMINION_REFRESH_MINUTES:-120}
+      - DOMINION_DEMO=${DOMINION_DEMO:-0}
     volumes:
       # Your own pictures of the house for each season and weather (not in git).
       - ../weather/images:/app/images/weather:ro
@@ -128,6 +119,9 @@ services:
       - ../polestar/images:/app/images/polestar:ro
       # Polestar driving history for the self-calculated efficiency.
       - polestar:/data/polestar
+      # Dominion tokens and login cookies from the one-time `dompower login` (see dominion/README.md).
+      - dominion:/data/dominion
+      - ../dominion/images:/app/images/dominion:ro
 
 volumes:
   database:

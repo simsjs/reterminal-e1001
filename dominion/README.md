@@ -9,7 +9,7 @@ A full-screen LaraPaper recipe for the E1001 showing your Dominion Energy Virgin
 
 ## How it works
 
-Dominion has no public API, so `bridge/` runs a small Python service (`dominion-bridge` in `larapaper/docker-compose.yml`). It uses the community library [dompower](https://github.com/YeomansIII/dompower), the one behind the Home Assistant integration, to read two things:
+Dominion has no public API, so the home energy screen is one part of the `bridges` service (`bridges/dominion.py`; `bridges` in `larapaper/docker-compose.yml`, which LaraPaper still reaches as `dominion-bridge`). It uses the community library [dompower](https://github.com/YeomansIII/dompower), the one behind the Home Assistant integration, to read two things:
 
 - the current billing cycle from Dominion's bill-forecast endpoint: dates, kWh so far, and last bill's dollars and kWh
 - 30-minute smart-meter readings for the last 9 days
@@ -36,21 +36,21 @@ It checks every 2 hours and serves the result to LaraPaper as JSON. It only read
 
    Put the Dominion logo at `dominion/images/logo.png`. It stays on the Pi and out of git; see [`images/README.md`](images/README.md).
 
-2. **Build, then log in to Dominion once.** Have your phone ready: Dominion texts or emails a code, and it expires after about 5 minutes.
+2. **Start it, then log in to Dominion once.** Have your phone ready: Dominion texts or emails a code, and it expires after about 5 minutes.
 
    ```bash
-   docker compose build dominion-bridge
-   docker compose run --rm dominion-bridge dompower login -u you@example.com -o /data/tokens.json --cookies /data/cookies.json
-   docker compose run --rm dominion-bridge dompower --token-file /data/tokens.json select-account
+   docker compose up -d --build bridges
+   docker compose exec bridges dompower login -u you@example.com -o /data/dominion/tokens.json --cookies /data/dominion/cookies.json
+   docker compose exec bridges dompower --token-file /data/dominion/tokens.json select-account
+   docker compose restart bridges
    ```
 
-   The tokens and login cookies go into the `larapaper_dominion` Docker volume, so they survive rebuilds. The cookies let later logins skip the code.
+   The tokens and login cookies go into the `larapaper_dominion` Docker volume (at `/data/dominion` in the `bridges` service), so they survive rebuilds. The cookies let later logins skip the code.
 
-3. **Start it.**
+3. **Check it.**
 
    ```bash
-   docker compose up -d
-   docker compose logs -f dominion-bridge   # look for "Refreshed: ... kWh this cycle"
+   docker compose logs -f bridges   # look for "energy: Refreshed: ... kWh this cycle"
    ```
 
 4. **Import the recipe in LaraPaper.** Go to Plugins → Add Recipe → Import Recipe Archive and upload `dominion/dominion-recipe.zip` (download it from GitHub). Then open its settings:
@@ -74,9 +74,9 @@ It checks every 2 hours and serves the result to LaraPaper as JSON. It only read
 | `DOMINION_ACCOUNT` / `DOMINION_METER` | from `select-account` | Pin a specific account and meter |
 | `DOMINION_DEMO` | 0 | `1` shows sample data |
 
-The logo is `images/logo.png`, kept on the Pi and ignored by git. Any black-on-white or colored PNG works: the bridge trims it and converts it to solid black and white at 54 px tall (set `LOGO_HEIGHT` on the bridge to change that). After changing it, run `docker compose restart dominion-bridge`.
+The logo is `images/logo.png`, kept on the Pi and ignored by git. Any black-on-white or colored PNG works: the bridge trims it and converts it to solid black and white at 54 px tall (set `DOMINION_LOGO_HEIGHT` on the `bridges` service to change that). After changing it, run `docker compose restart bridges`.
 
 ## When it stops working
 
-- **"Refresh token expired" or another auth error:** Dominion's login has lapsed. Its refresh token dies about 90 minutes after it was last used, so the bridge renews it every 20 minutes (`KEEPALIVE_MINUTES`). It can still lapse if the bridge or the Pi is off for more than about an hour. Run the `dompower login` command from step 2 again, then `docker compose restart dominion-bridge`.
-- **dompower is unofficial.** If Dominion changes its website, the screen keeps the last good data and shows **Offline**. When a fix is released, bump the version in `bridge/requirements.txt` and rebuild.
+- **"Refresh token expired" or another auth error:** Dominion's login has lapsed. Its refresh token dies about 90 minutes after it was last used, so the bridge renews it every 20 minutes (`DOMINION_KEEPALIVE_MINUTES`; look for "Saved refreshed Dominion tokens" in `docker compose logs bridges`). It can still lapse if the bridges service or the Pi is off for more than about an hour. Run the `dompower login` command from step 2 again, then `docker compose restart bridges`.
+- **dompower is unofficial.** If Dominion changes its website, the screen keeps the last good data and shows **Offline**. When a fix is released, bump the version in `bridges/requirements.txt` and rebuild.

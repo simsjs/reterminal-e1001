@@ -21,18 +21,20 @@ fitness screen from Strava (see [`strava/`](strava/README.md)) and a weather scr
   holiday calendar, reminders from Google Tasks, and personal countdowns from
   `content/content.yml`. It renders the screen's HTML and serves it as JSON at
   `/api/week`. It also serves the header fonts for every screen.
-- `larapaper/docker-compose.yml` runs LaraPaper, the calendar screen, the
-  `bridges` service and (until it moves into it) the Dominion bridge together.
+- `larapaper/docker-compose.yml` runs three services together: LaraPaper, the
+  calendar screen (`kitchen-board`) and `bridges`.
 - `bridges/` is one Python service for the screens that need outside data. Each
-  screen is its own module there (so far `weather.py`, `strava.py` and `polestar.py`) with its own routes,
+  screen is its own module there (`weather.py`, `strava.py`, `polestar.py` and `dominion.py`) with its own routes,
   token and refresh loop; one screen failing doesn't stop the others.
   `http://localhost:4572/health` shows each screen's status. LaraPaper still
-  reaches each screen by its old name (`weather-bridge`, ...).
+  reaches each screen by its old name (`weather-bridge`, `strava-bridge`,
+  `polestar-bridge`, `dominion-bridge`), so the recipes never changed.
 - `polestar/` holds the Polestar status screen's LaraPaper recipe and pictures.
   Its data (both cars, read from Polestar) comes from `bridges/polestar.py`. Setup is in
   [`polestar/README.md`](polestar/README.md).
-- `dominion/` holds the home energy screen: a small bridge that reads your
-  Dominion Energy smart-meter data, and its LaraPaper recipe. Setup is in
+- `dominion/` holds the home energy screen's LaraPaper recipe and logo. Its
+  data (your Dominion Energy smart-meter readings) comes from
+  `bridges/dominion.py`. Setup is in
   [`dominion/README.md`](dominion/README.md).
 - `strava/` holds the fitness screen's LaraPaper recipe and sign-in tool. Its
   data (your activities from the Strava API) comes from `bridges/strava.py`. Setup is in

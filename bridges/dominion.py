@@ -1,5 +1,5 @@
 """
-Dominion Energy -> LaraPaper bridge.
+Home energy screen (Dominion Energy) for the bridges service (was dominion-bridge).
 
 Uses the community `dompower` library (the one behind the Home Assistant
 integration) to read your Dominion Energy Virginia account: the current billing
@@ -12,32 +12,33 @@ on your account.
     GET /raw.json           the untouched bill-forecast response, for checking which fields Dominion sends
     GET /health
 
-Auth: send `Authorization: Bearer <BRIDGE_TOKEN>` (or ?token=...). /health is open.
+Auth: send `Authorization: Bearer <DOMINION_BRIDGE_TOKEN>` (or ?token=...). /health is open.
 
-Login is a one-time step with the dompower CLI inside this container (it needs
-the code Dominion texts or emails you):
+Login is a one-time step with the dompower CLI inside the bridges container (it
+needs the code Dominion texts or emails you):
 
-    docker compose run --rm dominion-bridge dompower --token-file /data/tokens.json login -u you@example.com --cookies /data/cookies.json
-    docker compose run --rm dominion-bridge dompower --token-file /data/tokens.json select-account
+    docker compose exec bridges dompower login -u you@example.com -o /data/dominion/tokens.json --cookies /data/dominion/cookies.json
+    docker compose exec bridges dompower --token-file /data/dominion/tokens.json select-account
 
 After that the bridge keeps the tokens fresh by itself and saves each new pair
-back to /data/tokens.json (both tokens change on every refresh).
+back to /data/dominion/tokens.json (both tokens change on every refresh).
 
 Environment:
-    TOKEN_FILE          default /data/tokens.json (written by `dompower login`)
+    DOMINION_TOKEN_FILE default /data/dominion/tokens.json (written by `dompower login`)
     DOMINION_ACCOUNT    optional account number (default: the one picked with select-account,
                         else the default account on your profile)
     DOMINION_METER      optional meter number (same fallbacks)
-    BRIDGE_TOKEN        shared secret LaraPaper must send (strongly recommended)
-    REFRESH_MINUTES     background refresh interval, default 120. Dominion posts meter data
-                        about once a day, so there's no point going much faster.
-    KEEPALIVE_MINUTES   how often to rotate the login tokens, default 20. Dominion's refresh
-                        token expires about 90 min after the last rotation, so keep this short.
+    DOMINION_BRIDGE_TOKEN       shared secret LaraPaper must send (strongly recommended)
+    DOMINION_REFRESH_MINUTES    background refresh interval, default 120. Dominion posts meter
+                                data about once a day, so there's no point going much faster.
+    DOMINION_KEEPALIVE_MINUTES  how often to rotate the login tokens, default 20. Dominion's
+                                refresh token expires about 90 min after the last rotation, so
+                                keep this short.
     TZ                  IANA time zone for labels, default America/New_York
-    DEMO                "1" to serve realistic fake data without logging in
-    LOGO_FILE           image for the top-right corner (default: logo.png next to this script, or
-                        /app/images/logo.png). Converted to crisp 1-bit at startup.
-    LOGO_HEIGHT         logo height on screen in px, default 54 (width follows the image, max 170)
+    DOMINION_DEMO       "1" to serve realistic fake data without logging in
+    DOMINION_LOGO_FILE  image for the top-right corner (default /app/images/dominion/logo.png).
+                        Converted to crisp 1-bit at startup.
+    DOMINION_LOGO_HEIGHT  logo height on screen in px, default 54 (width follows the image, max 170)
 """
 
 from __future__ import annotations
@@ -51,27 +52,28 @@ import logging
 import math
 import os
 import random
-import secrets
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-log = logging.getLogger("dominion-bridge")
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
+from common import check_token, flag, page_info, setting
+
+NAME = "energy"
+log = logging.getLogger("energy")
 
 TZ = ZoneInfo(os.getenv("TZ") or "America/New_York")
-TOKEN_FILE = Path(os.getenv("TOKEN_FILE", "/data/tokens.json"))
-BRIDGE_TOKEN = os.getenv("BRIDGE_TOKEN", "")
-REFRESH_MINUTES = max(30, int(os.getenv("REFRESH_MINUTES", "120") or 120))
+TOKEN_FILE = Path(setting("DOMINION", "TOKEN_FILE", "/data/dominion/tokens.json"))
+BRIDGE_TOKEN = setting("DOMINION", "BRIDGE_TOKEN")
+REFRESH_MINUTES = max(30, int(setting("DOMINION", "REFRESH_MINUTES", "120") or 120))
 # Dominion's access token lives 30 min and its refresh token dies roughly an hour after
 # that, so the tokens must be rotated far more often than the data is fetched.
-KEEPALIVE_MINUTES = max(5, int(os.getenv("KEEPALIVE_MINUTES", "20") or 20))
-DEMO = os.getenv("DEMO", "0").strip().lower() in ("1", "true", "yes")
+KEEPALIVE_MINUTES = max(5, int(setting("DOMINION", "KEEPALIVE_MINUTES", "20") or 20))
+DEMO = flag("DOMINION", "DEMO")
 HISTORY_DAYS = 9  # enough for 7 full days plus a day or two of reporting lag
 
 # Pixel sizes the recipe draws with (full layout). Kept here so the template stays simple.
@@ -81,8 +83,7 @@ WEEK_CHART_H = 64   # tallest daily bar
 
 # ── Logo: trimmed, scaled once and turned into solid black/white for e-ink ──
 def _load_logo() -> dict[str, Any] | None:
-    here = Path(__file__).resolve().parent
-    candidates = [os.getenv("LOGO_FILE", ""), str(here / "logo.png"), "/app/images/logo.png"]
+    candidates = [setting("DOMINION", "LOGO_FILE"), "/app/images/dominion/logo.png"]
     path = next((c for c in candidates if c and Path(c).is_file()), None)
     if not path:
         return None
@@ -96,7 +97,7 @@ def _load_logo() -> dict[str, Any] | None:
         bbox = gray.point(lambda v: 255 if v < 245 else 0).getbbox()
         if bbox:
             gray = gray.crop(bbox)
-        h = int(os.getenv("LOGO_HEIGHT", "54") or 54)
+        h = int(setting("DOMINION", "LOGO_HEIGHT", "54") or 54)
         scale = min(170 / gray.width, h / gray.height)
         gray = gray.resize((round(gray.width * scale), round(gray.height * scale)), Image.Resampling.LANCZOS)
         # A hard threshold, not dithering: colored artwork (Dominion blue) goes solid black,
@@ -421,7 +422,7 @@ class Source:
 
 
 source = Source()
-app = FastAPI(title="dominion-bridge")
+router = APIRouter()
 
 
 # Both loops rotate the single-use refresh token, so they must never overlap.
@@ -433,6 +434,8 @@ async def _loop() -> None:
         try:
             async with _token_lock:
                 await source.refresh()
+        except asyncio.CancelledError:
+            raise
         except Exception as err:  # keep serving the last good data
             source.error = f"{type(err).__name__}: {err}"
             log.warning("Refresh failed: %s", source.error)
@@ -445,57 +448,19 @@ async def _keepalive_loop() -> None:
         try:
             async with _token_lock:
                 await source.keepalive()
+        except asyncio.CancelledError:
+            raise
         except Exception as err:
             log.warning("Token keep-alive failed: %s: %s", type(err).__name__, err)
 
 
-@app.on_event("startup")
-async def _start() -> None:
+def start() -> list:
     if not BRIDGE_TOKEN:
-        log.warning("BRIDGE_TOKEN is not set; anyone on your network can read your usage")
-    asyncio.create_task(_loop())
-    asyncio.create_task(_keepalive_loop())
+        log.warning("DOMINION_BRIDGE_TOKEN is not set; anyone on your network can read your usage")
+    return [_loop(), _keepalive_loop()]
 
 
-def _check(request: Request) -> None:
-    if not BRIDGE_TOKEN:
-        return
-    got = request.headers.get("authorization", "").removeprefix("Bearer ").strip() or request.query_params.get("token", "")
-    if not secrets.compare_digest(got, BRIDGE_TOKEN):
-        raise HTTPException(401, "bad token")
-
-
-SCREEN_NAME = "energy"
-
-
-# Page dots: SCREEN_ORDER lists the screens in playlist order (same setting for
-# every service). This screen's dot number and the total go out with the data.
-def _page_info() -> dict:
-    order = [s.strip().lower() for s in os.environ.get("SCREEN_ORDER", "").split(",") if s.strip()]
-    if SCREEN_NAME not in order:
-        return {}
-    return {"page_number": order.index(SCREEN_NAME) + 1, "page_count": len(order)}
-
-
-@app.get("/dominion.json")
-async def dominion_json(request: Request) -> JSONResponse:
-    _check(request)
-    if source.panel:
-        out = dict(source.panel)
-        if source.error:
-            out["warning"] = "Couldn't reach Dominion; showing data from " + out.get("as_of", "earlier")
-        return JSONResponse({**out, **_page_info()})
-    return JSONResponse({"ok": False, "error": source.error or "Starting up…", **_page_info()})
-
-
-@app.get("/raw.json")
-async def raw_json(request: Request) -> JSONResponse:
-    _check(request)
-    return JSONResponse(source.raw or {"note": "No bill-forecast response yet" + (" (demo mode)" if DEMO else "")})
-
-
-@app.get("/health")
-async def health() -> dict[str, Any]:
+def health() -> dict[str, Any]:
     return {
         "ok": source.error is None and source.panel is not None,
         "demo": DEMO,
@@ -504,7 +469,18 @@ async def health() -> dict[str, Any]:
     }
 
 
-if __name__ == "__main__":
-    import uvicorn
+@router.get("/dominion.json")
+async def dominion_json(request: Request) -> JSONResponse:
+    check_token(request, BRIDGE_TOKEN)
+    if source.panel:
+        out = dict(source.panel)
+        if source.error:
+            out["warning"] = "Couldn't reach Dominion; showing data from " + out.get("as_of", "earlier")
+        return JSONResponse({**out, **page_info(NAME)})
+    return JSONResponse({"ok": False, "error": source.error or "Starting up…", **page_info(NAME)})
 
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8765")))
+
+@router.get("/raw.json")
+async def raw_json(request: Request) -> JSONResponse:
+    check_token(request, BRIDGE_TOKEN)
+    return JSONResponse(source.raw or {"note": "No bill-forecast response yet" + (" (demo mode)" if DEMO else "")})
