@@ -97,27 +97,6 @@ services:
       - dominion:/data
       - ../dominion/images:/app/images:ro
 
-  strava-bridge:
-    build: ../strava/bridge
-    restart: unless-stopped
-    ports:
-      - "${LOCAL_BIND:-127.0.0.1}:4571:8765"   # raw data, from the Pi only: http://localhost:4571/fitness.json?token=<STRAVA_BRIDGE_TOKEN>
-    environment:
-      - TZ=${TZ:-America/New_York}
-      - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather}   # page dots, see README
-      - BRIDGE_TOKEN=${STRAVA_BRIDGE_TOKEN:-}
-      - STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID:-}
-      - STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET:-}
-      - STRAVA_REFRESH_TOKEN=${STRAVA_REFRESH_TOKEN:-}
-      - REFRESH_MINUTES=${STRAVA_REFRESH_MINUTES:-15}
-      - STRENGTH_TYPES=${STRAVA_STRENGTH_TYPES:-WeightTraining,Workout,Crossfit,HIIT}
-      - RUCK_WORDS=${STRAVA_RUCK_WORDS:-ruck}
-      - DEMO=${STRAVA_DEMO:-0}
-      - DEMO_LAYOUT=${STRAVA_DEMO_LAYOUT:-ride}
-    volumes:
-      # The newest Strava refresh token (Strava can hand out a new one on any refresh).
-      - strava:/data
-
   # One service for the screens that need outside data. Each screen keeps its
   # own routes and token; the aliases keep the recipes' old Bridge URLs working.
   bridges:
@@ -127,7 +106,9 @@ services:
       default:
         aliases:
           - weather-bridge
+          - strava-bridge
     ports:
+      - "${LOCAL_BIND:-127.0.0.1}:4571:8765"   # fitness raw data, from the Pi only: http://localhost:4571/fitness.json?token=<STRAVA_BRIDGE_TOKEN>
       - "${LOCAL_BIND:-127.0.0.1}:4572:8765"   # weather raw data, from the Pi only: http://localhost:4572/weather.json
     environment:
       - TZ=${TZ:-America/New_York}
@@ -141,9 +122,21 @@ services:
       - WEATHER_ALERTS=${WEATHER_ALERTS:-on}
       - WEATHER_SCENE=${WEATHER_SCENE:-auto}
       - WEATHER_DEMO=${WEATHER_DEMO:-0}
+      # Fitness screen (Strava)
+      - STRAVA_BRIDGE_TOKEN=${STRAVA_BRIDGE_TOKEN:-}
+      - STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID:-}
+      - STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET:-}
+      - STRAVA_REFRESH_TOKEN=${STRAVA_REFRESH_TOKEN:-}
+      - STRAVA_REFRESH_MINUTES=${STRAVA_REFRESH_MINUTES:-15}
+      - STRAVA_STRENGTH_TYPES=${STRAVA_STRENGTH_TYPES:-WeightTraining,Workout,Crossfit,HIIT}
+      - STRAVA_RUCK_WORDS=${STRAVA_RUCK_WORDS:-ruck}
+      - STRAVA_DEMO=${STRAVA_DEMO:-0}
+      - STRAVA_DEMO_LAYOUT=${STRAVA_DEMO_LAYOUT:-ride}
     volumes:
       # Your own pictures of the house for each season and weather (not in git).
       - ../weather/images:/app/images/weather:ro
+      # The newest Strava refresh token (Strava can hand out a new one on any refresh).
+      - strava:/data/strava
 
 volumes:
   database:

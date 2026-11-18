@@ -20,7 +20,7 @@ The previews use made-up data. The route in the run preview is a drawn shape, no
 
 ## How it works
 
-`bridge/` runs a small Python service (`strava-bridge` in `larapaper/docker-compose.yml`). Every 15 minutes it asks the official Strava API for the last 7 weeks of activities. When there's a new latest activity, it also fetches that one's details, laps and heart-rate and power data. It turns all that into ready-to-draw JSON for LaraPaper. It only reads and never changes anything on your Strava account.
+The fitness screen is one part of the `bridges` service (`bridges/strava.py`; `bridges` in `larapaper/docker-compose.yml`, which LaraPaper still reaches as `strava-bridge`). Every 15 minutes it asks the official Strava API for the last 7 weeks of activities. When there's a new latest activity, it also fetches that one's details, laps and heart-rate and power data. It turns all that into ready-to-draw JSON for LaraPaper. It only reads and never changes anything on your Strava account.
 
 What counts as what:
 
@@ -62,7 +62,7 @@ Hours are moving time. Relative effort is Strava's own score, so it only shows i
 
    ```bash
    docker compose up -d --build
-   docker compose logs -f strava-bridge   # look for "Refreshed: ... activities"
+   docker compose logs -f bridges   # look for "fitness: Refreshed: ... activities"
    ```
 
 5. **Import the recipe in LaraPaper.** Go to Plugins → Add Recipe → Import Recipe Archive and upload `strava/strava-recipe.zip` (download it from GitHub). Then open its settings:

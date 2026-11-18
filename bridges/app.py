@@ -25,12 +25,13 @@ from typing import Any
 
 from fastapi import FastAPI
 
+import strava
 import weather
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("bridges")
 
-SCREENS = [weather]
+SCREENS = [weather, strava]
 
 
 @asynccontextmanager

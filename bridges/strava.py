@@ -1,5 +1,5 @@
 """
-Strava -> LaraPaper bridge for the Fitness screen.
+Fitness screen (Strava) for the bridges service (was strava-bridge).
 
 Reads your own activities from the Strava API, refreshes in the background, and
 serves a small, pre-formatted JSON document that a LaraPaper (TRMNL BYOS) recipe
@@ -8,7 +8,7 @@ polls. It only reads; it never changes anything on your Strava account.
     GET /fitness.json       panel data (what the recipe uses)
     GET /health
 
-Auth: send `Authorization: Bearer <BRIDGE_TOKEN>` (or ?token=...). /health is open.
+Auth: send `Authorization: Bearer <STRAVA_BRIDGE_TOKEN>` (or ?token=...). /health is open.
 
 The left side of the screen shows your latest activity in one of three layouts:
 
@@ -27,17 +27,17 @@ Strava sign-in is a one-time step on your laptop (see strava/README.md):
 Environment:
     STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET   from strava.com/settings/api
     STRAVA_REFRESH_TOKEN   from get_strava_token.py. Strava can hand out a new one on any
-                           refresh; the bridge saves the newest to TOKEN_FILE and prefers it.
-    TOKEN_FILE             default /data/strava_tokens.json
-    BRIDGE_TOKEN           shared secret LaraPaper must send (strongly recommended)
-    REFRESH_MINUTES        background refresh interval, default 15 (minimum 5)
-    STRENGTH_TYPES         Strava sport types that count as strength,
+                           refresh; the bridge saves the newest to STRAVA_TOKEN_FILE and prefers it.
+    STRAVA_TOKEN_FILE      default /data/strava/strava_tokens.json
+    STRAVA_BRIDGE_TOKEN    shared secret LaraPaper must send (strongly recommended)
+    STRAVA_REFRESH_MINUTES background refresh interval, default 15 (minimum 5)
+    STRAVA_STRENGTH_TYPES  Strava sport types that count as strength,
                            default WeightTraining,Workout,Crossfit,HIIT
-    RUCK_WORDS             words in an activity's title that make it a ruck (counted as
+    STRAVA_RUCK_WORDS      words in an activity's title that make it a ruck (counted as
                            strength), default ruck
     TZ                     IANA time zone, default America/New_York
-    DEMO                   "1" to serve made-up data without signing in
-    DEMO_LAYOUT            with DEMO=1: ride (default), route or effort
+    STRAVA_DEMO            "1" to serve made-up data without signing in
+    STRAVA_DEMO_LAYOUT     with STRAVA_DEMO=1: ride (default), route or effort
 """
 
 from __future__ import annotations
@@ -49,7 +49,6 @@ import math
 import os
 import random
 import re
-import secrets
 import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -57,23 +56,25 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-log = logging.getLogger("strava-bridge")
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
+from common import check_token, flag, page_info, refresh_forever, setting
+
+NAME = "fitness"
+log = logging.getLogger("fitness")
 
 TZ = ZoneInfo(os.getenv("TZ") or "America/New_York")
-TOKEN_FILE = Path(os.getenv("TOKEN_FILE", "/data/strava_tokens.json"))
+TOKEN_FILE = Path(setting("STRAVA", "TOKEN_FILE", "/data/strava/strava_tokens.json"))
 CLIENT_ID = os.getenv("STRAVA_CLIENT_ID", "").strip()
 CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET", "").strip()
 START_REFRESH_TOKEN = os.getenv("STRAVA_REFRESH_TOKEN", "").strip()
-BRIDGE_TOKEN = os.getenv("BRIDGE_TOKEN", "")
-REFRESH_MINUTES = max(5, int(os.getenv("REFRESH_MINUTES", "15") or 15))
-DEMO = os.getenv("DEMO", "0").strip().lower() in ("1", "true", "yes")
-DEMO_LAYOUT = os.getenv("DEMO_LAYOUT", "ride").strip().lower()
-STRENGTH_TYPES = {t.strip() for t in os.getenv("STRENGTH_TYPES", "WeightTraining,Workout,Crossfit,HIIT").split(",") if t.strip()}
-RUCK_WORDS = [w.strip().lower() for w in os.getenv("RUCK_WORDS", "ruck").split(",") if w.strip()]
+BRIDGE_TOKEN = setting("STRAVA", "BRIDGE_TOKEN")
+REFRESH_MINUTES = max(5, int(setting("STRAVA", "REFRESH_MINUTES", "15") or 15))
+DEMO = flag("STRAVA", "DEMO")
+DEMO_LAYOUT = setting("STRAVA", "DEMO_LAYOUT", "ride").strip().lower()
+STRENGTH_TYPES = {t.strip() for t in setting("STRAVA", "STRENGTH_TYPES", "WeightTraining,Workout,Crossfit,HIIT").split(",") if t.strip()}
+RUCK_WORDS = [w.strip().lower() for w in setting("STRAVA", "RUCK_WORDS", "ruck").split(",") if w.strip()]
 
 API = "https://www.strava.com/api/v3"
 WEEKS_BACK = 6  # full weeks of history next to this week
@@ -666,59 +667,16 @@ class Source:
 
 
 source = Source()
-app = FastAPI(title="strava-bridge")
+router = APIRouter()
 
 
-async def _loop() -> None:
-    while True:
-        try:
-            await source.refresh()
-        except Exception as err:  # keep serving the last good data
-            source.error = f"{type(err).__name__}: {err}"
-            log.warning("Refresh failed: %s", source.error)
-        await asyncio.sleep(REFRESH_MINUTES * 60)
-
-
-@app.on_event("startup")
-async def _start() -> None:
+def start() -> list:
     if not BRIDGE_TOKEN:
-        log.warning("BRIDGE_TOKEN is not set; anyone on your network can read your activities")
-    asyncio.create_task(_loop())
+        log.warning("STRAVA_BRIDGE_TOKEN is not set; anyone on your network can read your activities")
+    return [refresh_forever(source, REFRESH_MINUTES, log)]
 
 
-def _check(request: Request) -> None:
-    if not BRIDGE_TOKEN:
-        return
-    got = request.headers.get("authorization", "").removeprefix("Bearer ").strip() or request.query_params.get("token", "")
-    if not secrets.compare_digest(got, BRIDGE_TOKEN):
-        raise HTTPException(401, "bad token")
-
-
-SCREEN_NAME = "fitness"
-
-
-# Page dots: SCREEN_ORDER lists the screens in playlist order (same setting for
-# every service). This screen's dot number and the total go out with the data.
-def _page_info() -> dict:
-    order = [s.strip().lower() for s in os.environ.get("SCREEN_ORDER", "").split(",") if s.strip()]
-    if SCREEN_NAME not in order:
-        return {}
-    return {"page_number": order.index(SCREEN_NAME) + 1, "page_count": len(order)}
-
-
-@app.get("/fitness.json")
-async def fitness_json(request: Request) -> JSONResponse:
-    _check(request)
-    if source.panel:
-        out = dict(source.panel)
-        if source.error:
-            out["warning"] = "Couldn't reach Strava; showing data from " + out.get("as_of", "earlier")
-        return JSONResponse({**out, **_page_info()})
-    return JSONResponse({"ok": False, "error": source.error or "Starting up…", **_page_info()})
-
-
-@app.get("/health")
-async def health() -> dict[str, Any]:
+def health() -> dict[str, Any]:
     return {
         "ok": source.error is None and source.panel is not None,
         "demo": DEMO,
@@ -727,7 +685,12 @@ async def health() -> dict[str, Any]:
     }
 
 
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8765")))
+@router.get("/fitness.json")
+async def fitness_json(request: Request) -> JSONResponse:
+    check_token(request, BRIDGE_TOKEN)
+    if source.panel:
+        out = dict(source.panel)
+        if source.error:
+            out["warning"] = "Couldn't reach Strava; showing data from " + out.get("as_of", "earlier")
+        return JSONResponse({**out, **page_info(NAME)})
+    return JSONResponse({"ok": False, "error": source.error or "Starting up…", **page_info(NAME)})
