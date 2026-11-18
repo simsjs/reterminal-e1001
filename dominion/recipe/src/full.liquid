@@ -1,6 +1,6 @@
 <div class="view view--full">
   <div class="dex">
-  {% render "de_header", device: trmnl.device, cfv: trmnl.plugin_settings.custom_fields_values %}
+  {% render "screen_header", title: "HOME ENERGY CONSUMPTION", device: trmnl.device, cfv: trmnl.plugin_settings.custom_fields_values, pn: page_number, pc: page_count %}
   <div class="dex-body">
     <div class="de">
     {% if ok != true %}

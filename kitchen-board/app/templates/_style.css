@@ -13,22 +13,8 @@
 .kb .mono { font-family: "KB Mono", "Courier New", monospace; }
 .kb .caps { text-transform: uppercase; letter-spacing: 2.4px; }
 
-/* Header */
-.kb .hdr { position: absolute; left: 0; top: 0; width: 800px; height: 44px; border-bottom: 3px solid #000;
-  display: flex; align-items: center; padding: 0 21px 0 20px; }
-.kb .dots { display: flex; gap: 6px; margin-right: 13px; }
-.kb .dot { width: 10px; height: 10px; border: 2px solid #000; border-radius: 50%; }
-.kb .dot.on { background: #000; }
-.kb .hdr-title { font: 700 14px/1 "KB Mono", monospace; letter-spacing: 0.8px; }
-.kb .hdr-right { margin-left: auto; display: flex; align-items: center; font: 700 14px/1 "KB Mono", monospace; letter-spacing: 0.8px; }
-.kb .hdr-right .wifi { margin: 0 14px 0 14px; width: 21px; height: 16px; }
-.kb .wifi path { fill: none; stroke: #000; stroke-width: 2.6; stroke-linecap: round; }
-.kb .wifi circle { fill: #000; }
-/* Unlit bars: a thin dotted arc, since e-ink is 1-bit and gray drops out. */
-.kb .wifi-2 .w3, .kb .wifi-1 .w3, .kb .wifi-1 .w2 { stroke-width: 1.5; stroke-dasharray: 2 1.8; stroke-linecap: butt; }
-.kb .batt { position: relative; width: 27px; height: 14px; border: 2.5px solid #000; border-radius: 3px; margin-right: 9px; }
-.kb .batt::after { content: ""; position: absolute; right: -5px; top: 3px; width: 2.5px; height: 4px; background: #000; border-radius: 0 1px 1px 0; }
-.kb .batt-fill { position: absolute; left: 1.5px; top: 1.5px; bottom: 1.5px; background: #000; }
+/* Header: shared with the other screens, see shared/header.css */
+{% include "_header.css" %}
 
 /* ---------- Morning brief ---------- */
 .kb .left { position: absolute; left: 0; top: 44px; width: 300px; height: 436px; border-right: 3px solid #000; }

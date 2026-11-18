@@ -1,6 +1,6 @@
 <div class="view view--full">
   <div class="psx">
-  {% render "ps_header", device: trmnl.device, cfv: trmnl.plugin_settings.custom_fields_values %}
+  {% render "screen_header", title: "POLESTAR STATUS", device: trmnl.device, cfv: trmnl.plugin_settings.custom_fields_values, pn: page_number, pc: page_count %}
   <div class="psx-body">
     <div class="ps" style="padding: 18px 24px 14px">
     {% assign du = dist_unit | default: "mi" %}

@@ -849,6 +849,18 @@ async def health() -> dict[str, Any]:
     return {"ok": state.last_success is not None, "cars": len(state.cars), "error": state.error, "demo": DEMO}
 
 
+SCREEN_NAME = "polestar"
+
+
+# Page dots: SCREEN_ORDER lists the screens in playlist order (same setting for
+# every service). This screen's dot number and the total go out with the data.
+def _page_info() -> dict:
+    order = [s.strip().lower() for s in os.environ.get("SCREEN_ORDER", "").split(",") if s.strip()]
+    if SCREEN_NAME not in order:
+        return {}
+    return {"page_number": order.index(SCREEN_NAME) + 1, "page_count": len(order)}
+
+
 @app.get("/polestar.json")
 async def polestar(request: Request, units: str = "imperial") -> JSONResponse:
     _check_token(request)
@@ -869,6 +881,7 @@ async def polestar(request: Request, units: str = "imperial") -> JSONResponse:
         "logo": LOGO,
         "photo": random.choice(PHOTOS) if PHOTOS else None,  # a different pick on each refresh
     }
+    body.update(_page_info())
     return JSONResponse(body, headers={"Cache-Control": "no-store"})
 
 

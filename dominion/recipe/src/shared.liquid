@@ -1,24 +1,55 @@
-{% assign de_font = trmnl.plugin_settings.custom_fields_values.font_base | default: "http://kitchen-board:8080" %}
+{% comment %} ==== BEGIN shared header: copied from shared/ by tools/build-recipes.sh. Edit it there, not here. ==== {% endcomment %}
+{% assign kbh_font = trmnl.plugin_settings.custom_fields_values.font_base | default: "http://kitchen-board:8080" %}
 <style>
-  /* Header row: same look as the calendar and Polestar screens (fonts are served by the kitchen-board container) */
-  @font-face { font-family: "KB Mono"; src: url("{{ de_font }}/fonts/SpaceMono-Bold.ttf") format("truetype"); font-weight: 700; }
-  @font-face { font-family: "KB Mono"; src: url("{{ de_font }}/fonts/SpaceMono-Regular.ttf") format("truetype"); font-weight: 400; }
+  /* Fonts are served by the kitchen-board container. */
+  @font-face { font-family: "KB Mono"; src: url("{{ kbh_font }}/fonts/SpaceMono-Regular.ttf") format("truetype"); font-weight: 400; }
+  @font-face { font-family: "KB Mono"; src: url("{{ kbh_font }}/fonts/SpaceMono-Bold.ttf") format("truetype"); font-weight: 700; }
+  /* Screen header: page dots, title, Wi-Fi and battery. Shared by every screen.
+     This is the only place to change how the header looks. After editing, run
+     tools/build-recipes.sh, which copies it into the four recipes and into the
+     calendar service. (e-ink is 1-bit, so everything is pure black or white.) */
+  .kbh { position: absolute; left: 0; top: 0; width: 800px; height: 44px; border-bottom: 3px solid #000; box-sizing: border-box;
+    display: flex; align-items: center; padding: 0 21px 0 20px; color: #000; }
+  .kbh * { box-sizing: border-box; }
+  .kbh .dots { display: flex; gap: 6px; margin-right: 13px; }
+  .kbh .dot { width: 10px; height: 10px; border: 2px solid #000; border-radius: 50%; }
+  .kbh .dot.on { background: #000; }
+  .kbh .hdr-title { font: 700 14px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.8px; }
+  .kbh .hdr-right { margin-left: auto; display: flex; align-items: center; font: 700 14px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.8px; }
+  .kbh .upd { margin-right: 14px; }
+  .kbh .wifi { margin: 0 14px 0 0; width: 21px; height: 16px; }
+  .kbh .wifi path { fill: none; stroke: #000; stroke-width: 2.6; stroke-linecap: round; }
+  .kbh .wifi circle { fill: #000; }
+  /* Unlit bars: a thin dotted arc, since gray drops out on e-ink. */
+  .kbh .wifi-2 .w3, .kbh .wifi-1 .w3, .kbh .wifi-1 .w2 { stroke-width: 1.5; stroke-dasharray: 2 1.8; stroke-linecap: butt; }
+  .kbh .batt { position: relative; width: 27px; height: 14px; border: 2.5px solid #000; border-radius: 3px; margin-right: 9px; }
+  .kbh .batt::after { content: ""; position: absolute; right: -5px; top: 3px; width: 2.5px; height: 4px; background: #000; border-radius: 0 1px 1px 0; }
+  .kbh .batt-fill { position: absolute; left: 1.5px; top: 1.5px; bottom: 1.5px; background: #000; }
+</style>
+
+{% comment %}
+  The header row. full.liquid renders "screen_header" with title, device
+  (trmnl.device), cfv (the recipe's custom field values), pn: page_number,
+  pc: page_count and, optionally, as_of. pn / pc come from the bridge's data (worked out from SCREEN_ORDER). If an
+  older bridge doesn't send them, the recipe's "Page dot" and "Total pages"
+  settings are used instead. as_of is optional.
+{% endcomment %}
+{% template screen_header %}{% assign pn = pn | default: cfv.page_number | default: 1 | plus: 0 %}{% assign pc = pc | default: cfv.page_count | default: pn | plus: 0 %}{% if pc < pn %}{% assign pc = pn %}{% endif %}{% assign batt = device.percent_charged | default: 0 | round %}{% assign fill = batt | times: 20 | divided_by: 100 | round %}{% comment %} LaraPaper reports Wi-Fi as bars, 0-3. {% endcomment %}{% assign ws = device.wifi_strength | default: 3 %}{% if ws >= 3 %}{% assign wc = "wifi-3" %}{% elsif ws == 2 %}{% assign wc = "wifi-2" %}{% else %}{% assign wc = "wifi-1" %}{% endif %}
+<div class="kbh">
+  <div class="dots">{% for i in (1..pc) %}<div class="dot{% if i == pn %} on{% endif %}"></div>{% endfor %}</div>
+  <div class="hdr-title">{{ title }}</div>
+  <div class="hdr-right">
+    {% if as_of %}<span class="upd">UPDATED {{ as_of | upcase }}</span>{% endif %}
+    <svg class="wifi {{ wc }}" viewBox="0 0 21 16"><path class="w3" d="M1.6 5.6a12.6 12.6 0 0 1 17.8 0"/><path class="w2" d="M4.6 8.7a8.3 8.3 0 0 1 11.8 0"/><circle cx="10.5" cy="13.2" r="2.1"/></svg>
+    <div class="batt"><div class="batt-fill" style="width:{{ fill }}px"></div></div>
+    <span>{{ batt }}%</span>
+  </div>
+</div>
+{% endtemplate %}
+{% comment %} ==== END shared header ==== {% endcomment %}
+<style>
   .dex { position: fixed; top: 0; left: 0; z-index: 2147483647; width: 800px; height: 480px; overflow: hidden; background: #fff; color: #000; }
   .dex-body { position: absolute; top: 44px; left: 0; width: 800px; height: 436px; display: flex; }
-  .de-hdr { position: absolute; left: 0; top: 0; width: 800px; height: 44px; border-bottom: 3px solid #000; box-sizing: border-box;
-    display: flex; align-items: center; padding: 0 21px 0 20px; color: #000; }
-  .de-hdr .dots { display: flex; gap: 6px; margin-right: 13px; }
-  .de-hdr .dot { width: 10px; height: 10px; border: 2px solid #000; border-radius: 50%; box-sizing: border-box; }
-  .de-hdr .dot.on { background: #000; }
-  .de-hdr .hdr-title { font: 700 14px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.8px; }
-  .de-hdr .hdr-right { margin-left: auto; display: flex; align-items: center; font: 700 14px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.8px; }
-  .de-hdr .wifi { margin: 0 14px 0 0; width: 21px; height: 16px; }
-  .de-hdr .wifi path { fill: none; stroke: #000; stroke-width: 2.6; stroke-linecap: round; }
-  .de-hdr .wifi circle { fill: #000; }
-  .de-hdr .wifi-2 .w3, .de-hdr .wifi-1 .w3, .de-hdr .wifi-1 .w2 { stroke-width: 1.5; stroke-dasharray: 2 1.8; stroke-linecap: butt; }
-  .de-hdr .batt { position: relative; width: 27px; height: 14px; border: 2.5px solid #000; border-radius: 3px; margin-right: 9px; box-sizing: border-box; }
-  .de-hdr .batt::after { content: ""; position: absolute; right: -5px; top: 3px; width: 2.5px; height: 4px; background: #000; border-radius: 0 1px 1px 0; }
-  .de-hdr .batt-fill { position: absolute; left: 1.5px; top: 1.5px; bottom: 1.5px; background: #000; }
 
   /* Energy panel: pure black and white so it stays crisp on 1-bit e-ink (gray drops out). */
   .de { box-sizing: border-box; display: flex; width: 100%; height: 100%; color: #000; font-family: "Inter", "Helvetica Neue", Arial, sans-serif; font-variant-numeric: tabular-nums; line-height: 1.1; }
@@ -69,18 +100,6 @@
   .de-alert { display: inline-flex; align-items: center; gap: 6px; background: #000; color: #fff; font-weight: 700; font-size: 13px; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
   .de-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; }
 </style>
-
-{% template de_header %}{% assign pn = cfv.page_number | default: 3 | plus: 0 %}{% assign pc = cfv.page_count | default: 3 | plus: 0 %}{% if pc < pn %}{% assign pc = pn %}{% endif %}{% assign batt = device.percent_charged | default: 0 | round %}{% assign fill = batt | times: 20 | divided_by: 100 | round %}{% assign ws = device.wifi_strength | default: 3 %}{% if ws >= 3 %}{% assign wc = "wifi-3" %}{% elsif ws == 2 %}{% assign wc = "wifi-2" %}{% else %}{% assign wc = "wifi-1" %}{% endif %}
-<div class="de-hdr">
-  <div class="dots">{% for i in (1..pc) %}<div class="dot{% if i == pn %} on{% endif %}"></div>{% endfor %}</div>
-  <div class="hdr-title">HOME ENERGY CONSUMPTION</div>
-  <div class="hdr-right">
-    <svg class="wifi {{ wc }}" viewBox="0 0 21 16"><path class="w3" d="M1.6 5.6a12.6 12.6 0 0 1 17.8 0"/><path class="w2" d="M4.6 8.7a8.3 8.3 0 0 1 11.8 0"/><circle cx="10.5" cy="13.2" r="2.1"/></svg>
-    <div class="batt"><div class="batt-fill" style="width:{{ fill }}px"></div></div>
-    <span>{{ batt }}%</span>
-  </div>
-</div>
-{% endtemplate %}
 
 {% template de_cbar %}<div class="de-cbar"><div class="de-ctrack"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ c.pct_used }}%; background: #000"></div>{% if c.pct_pace > c.pct_used %}<div class="de-hatch" style="position: absolute; top: 0; bottom: 0; left: {{ c.pct_used }}%; width: {{ c.pct_pace | minus: c.pct_used }}%"></div>{% endif %}</div>{% if c.pct_last %}<div class="tick" style="left: calc(3px + (100% - 6px) * {{ c.pct_last }} / 100)"></div>{% endif %}</div>{% endtemplate %}
 

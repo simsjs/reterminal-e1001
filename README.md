@@ -17,8 +17,8 @@ fitness screen from Strava (see [`strava/`](strava/README.md)) and a weather scr
 **Morning Brief** (date, weather, today's events, three tiles) is paused while
 it gets more work. It still renders at `http://localhost:4568/brief` for
 previews, but it isn't in a playlist and doesn't get a header dot. To bring it
-back, set `BRIEF_ENABLED=on` and add 1 to `KB_PAGE_COUNT` in `.env`, then add a
-Morning playlist in LaraPaper.
+back, set `BRIEF_ENABLED=on` and put `brief` at the front of `SCREEN_ORDER` in
+`.env`, then add a Morning playlist in LaraPaper.
 
 ## How it fits together
 
@@ -158,6 +158,26 @@ in `content.yml`; whichever is sooner is shown. `HOLIDAY_SHOW_WITHIN_DAYS` in
 
 The Morning Brief tiles are a hand-written list, not pulled from any app. Edit `kitchen-board/content/content.yml`. After a `git pull`, changes show up
 on the next refresh without a rebuild.
+
+## Page dots
+
+The dots at the top left of every screen come from one setting in
+`larapaper/.env`, listing the screens in playlist order:
+
+```
+SCREEN_ORDER=week,polestar,energy,fitness,weather
+```
+
+Each service works out its own dot and the total from it. After adding,
+removing or reordering a screen, change this line and run
+`docker compose up -d`; the dots follow on each screen's next refresh. The
+recipes' **Page dot** and **Total pages** settings are only a fallback.
+
+The header itself (dots, title, Wi-Fi and battery) is drawn from one file,
+`shared/header.css`, with the recipe part in `shared/header.liquid`. After
+changing either, run `tools/build-recipes.sh`. It copies them into the four
+recipes and the calendar service and rebuilds the recipe zips; then import the
+zips in LaraPaper again and rebuild the calendar service.
 
 ## Previews and raw data
 

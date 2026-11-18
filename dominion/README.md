@@ -31,7 +31,7 @@ It checks every 2 hours and serves the result to LaraPaper as JSON. It only read
    ```
 
    - `DOMINION_BRIDGE_TOKEN`: make one with `python3 -c "import secrets; print(secrets.token_urlsafe(24))"`.
-   - Keep `KB_PAGE_COUNT` at `3` so This Week shows three dots.
+   - Check that `SCREEN_ORDER` lists `energy` where you want its dot (see *Page dots* in the main README).
    - For a first look without logging in, set `DOMINION_DEMO=1`.
 
    Put the Dominion logo at `dominion/images/logo.png`. It stays on the Pi and out of git; see [`images/README.md`](images/README.md).
@@ -56,7 +56,7 @@ It checks every 2 hours and serves the result to LaraPaper as JSON. It only read
 4. **Import the recipe in LaraPaper.** Go to Plugins → Add Recipe → Import Recipe Archive and upload `dominion/dominion-recipe.zip` (download it from GitHub). Then open its settings:
    - **Bridge URL:** `http://dominion-bridge:8765`
    - **Bridge token:** the same value as `DOMINION_BRIDGE_TOKEN`
-   - **Page dot / Total pages:** 3 and 3 (the defaults)
+   - **Page dot / Total pages:** leave the defaults. The bridge sends the real values, worked out from `SCREEN_ORDER`.
 
 5. **Add it to a playlist.** On the E1001's device page, add *Home Energy Consumption* to the **Day** playlist with the other screens.
 

@@ -46,7 +46,7 @@ Polestar has no public API, so `bridge/` runs a small Python service (`polestar-
    - **Bridge URL:** `http://polestar-bridge:8765`
    - **Bridge token:** the same value as `POLESTAR_BRIDGE_TOKEN`
    - **Units:** Miles
-   - **Page dot / Total pages:** 2 and 3 (the defaults: This Week, Polestar, home energy)
+   - **Page dot / Total pages:** leave the defaults. The bridge sends the real values, worked out from `SCREEN_ORDER`.
 
 5. **Add it to a playlist.** On the E1001's device page, add *Polestar* to the **Day** playlist next to *This Week*. The screen will then alternate between the two on each refresh.
 

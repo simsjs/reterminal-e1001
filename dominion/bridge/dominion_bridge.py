@@ -465,6 +465,18 @@ def _check(request: Request) -> None:
         raise HTTPException(401, "bad token")
 
 
+SCREEN_NAME = "energy"
+
+
+# Page dots: SCREEN_ORDER lists the screens in playlist order (same setting for
+# every service). This screen's dot number and the total go out with the data.
+def _page_info() -> dict:
+    order = [s.strip().lower() for s in os.environ.get("SCREEN_ORDER", "").split(",") if s.strip()]
+    if SCREEN_NAME not in order:
+        return {}
+    return {"page_number": order.index(SCREEN_NAME) + 1, "page_count": len(order)}
+
+
 @app.get("/dominion.json")
 async def dominion_json(request: Request) -> JSONResponse:
     _check(request)
@@ -472,8 +484,8 @@ async def dominion_json(request: Request) -> JSONResponse:
         out = dict(source.panel)
         if source.error:
             out["warning"] = "Couldn't reach Dominion; showing data from " + out.get("as_of", "earlier")
-        return JSONResponse(out)
-    return JSONResponse({"ok": False, "error": source.error or "Starting up…"})
+        return JSONResponse({**out, **_page_info()})
+    return JSONResponse({"ok": False, "error": source.error or "Starting up…", **_page_info()})
 
 
 @app.get("/raw.json")

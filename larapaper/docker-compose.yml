@@ -41,6 +41,7 @@ services:
       - "${LOCAL_BIND:-127.0.0.1}:4568:8080"   # preview, from the Pi only: http://localhost:4568/week
     environment:
       - TZ=${TZ:-America/New_York}
+      - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather}   # page dots, see README
       - WEATHER_LAT=${WEATHER_LAT:-38.8462}
       - WEATHER_LON=${WEATHER_LON:--77.3064}
       - CALENDAR_ICS_URLS=${CALENDAR_ICS_URLS:-}
@@ -53,7 +54,6 @@ services:
       - TASKS_INCLUDE_UNDATED=${TASKS_INCLUDE_UNDATED:-off}
       - BRIEF_ENABLED=${BRIEF_ENABLED:-off}
       - FONT_BASE_URL=${FONT_BASE_URL:-http://kitchen-board:8080}
-      - PAGE_COUNT=${KB_PAGE_COUNT:-5}   # header dots: This Week + Polestar + home energy + fitness + weather
     volumes:
       # A folder mount, so edits to content.yml show up after a git pull.
       - ../kitchen-board/content:/app/content:ro
@@ -65,6 +65,7 @@ services:
       - "${LOCAL_BIND:-127.0.0.1}:4569:8765"   # car images page, from the Pi only: http://localhost:4569/images?token=<POLESTAR_BRIDGE_TOKEN>
     environment:
       - TZ=${TZ:-America/New_York}
+      - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather}   # page dots, see README
       - POLESTAR_USERNAME=${POLESTAR_USERNAME:-}
       - POLESTAR_PASSWORD=${POLESTAR_PASSWORD:-}
       - BRIDGE_TOKEN=${POLESTAR_BRIDGE_TOKEN:-}
@@ -88,6 +89,7 @@ services:
       - "${LOCAL_BIND:-127.0.0.1}:4570:8765"   # raw data, from the Pi only: http://localhost:4570/dominion.json?token=<DOMINION_BRIDGE_TOKEN>
     environment:
       - TZ=${TZ:-America/New_York}
+      - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather}   # page dots, see README
       - BRIDGE_TOKEN=${DOMINION_BRIDGE_TOKEN:-}
       - DOMINION_ACCOUNT=${DOMINION_ACCOUNT:-}
       - DOMINION_METER=${DOMINION_METER:-}
@@ -106,6 +108,7 @@ services:
       - "${LOCAL_BIND:-127.0.0.1}:4571:8765"   # raw data, from the Pi only: http://localhost:4571/fitness.json?token=<STRAVA_BRIDGE_TOKEN>
     environment:
       - TZ=${TZ:-America/New_York}
+      - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather}   # page dots, see README
       - BRIDGE_TOKEN=${STRAVA_BRIDGE_TOKEN:-}
       - STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID:-}
       - STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET:-}
@@ -126,6 +129,7 @@ services:
       - "${LOCAL_BIND:-127.0.0.1}:4572:8765"   # raw data, from the Pi only: http://localhost:4572/weather.json
     environment:
       - TZ=${TZ:-America/New_York}
+      - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather}   # page dots, see README
       - WEATHER_LAT=${WEATHER_LAT:-38.8462}
       - WEATHER_LON=${WEATHER_LON:--77.3064}
       - WEATHER_PLACE=${WEATHER_PLACE:-Fairfax}

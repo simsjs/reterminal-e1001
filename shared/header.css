@@ -1,0 +1,21 @@
+/* Screen header: page dots, title, Wi-Fi and battery. Shared by every screen.
+   This is the only place to change how the header looks. After editing, run
+   tools/build-recipes.sh, which copies it into the four recipes and into the
+   calendar service. (e-ink is 1-bit, so everything is pure black or white.) */
+.kbh { position: absolute; left: 0; top: 0; width: 800px; height: 44px; border-bottom: 3px solid #000; box-sizing: border-box;
+  display: flex; align-items: center; padding: 0 21px 0 20px; color: #000; }
+.kbh * { box-sizing: border-box; }
+.kbh .dots { display: flex; gap: 6px; margin-right: 13px; }
+.kbh .dot { width: 10px; height: 10px; border: 2px solid #000; border-radius: 50%; }
+.kbh .dot.on { background: #000; }
+.kbh .hdr-title { font: 700 14px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.8px; }
+.kbh .hdr-right { margin-left: auto; display: flex; align-items: center; font: 700 14px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.8px; }
+.kbh .upd { margin-right: 14px; }
+.kbh .wifi { margin: 0 14px 0 0; width: 21px; height: 16px; }
+.kbh .wifi path { fill: none; stroke: #000; stroke-width: 2.6; stroke-linecap: round; }
+.kbh .wifi circle { fill: #000; }
+/* Unlit bars: a thin dotted arc, since gray drops out on e-ink. */
+.kbh .wifi-2 .w3, .kbh .wifi-1 .w3, .kbh .wifi-1 .w2 { stroke-width: 1.5; stroke-dasharray: 2 1.8; stroke-linecap: butt; }
+.kbh .batt { position: relative; width: 27px; height: 14px; border: 2.5px solid #000; border-radius: 3px; margin-right: 9px; }
+.kbh .batt::after { content: ""; position: absolute; right: -5px; top: 3px; width: 2.5px; height: 4px; background: #000; border-radius: 0 1px 1px 0; }
+.kbh .batt-fill { position: absolute; left: 1.5px; top: 1.5px; bottom: 1.5px; background: #000; }

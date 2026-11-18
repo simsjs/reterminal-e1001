@@ -30,8 +30,8 @@ HOLIDAYS_ICS_URL = os.environ.get(
 # Only count down to a holiday this many days out.
 HOLIDAY_SHOW_WITHIN_DAYS = int(os.environ.get("HOLIDAY_SHOW_WITHIN_DAYS", "60") or 60)
 
-# Morning Brief is paused: it still renders at /brief for previews, but it isn't
-# counted in the header dots. Set BRIEF_ENABLED=on to bring it back.
+# Morning Brief is paused: it still renders at /brief for previews. Set
+# BRIEF_ENABLED=on (and add brief to SCREEN_ORDER) to bring it back.
 BRIEF_ENABLED = os.environ.get("BRIEF_ENABLED", "off").lower() in ("on", "1", "true", "yes")
 
 # Reminders on This Week come from Google Tasks (the "Tasks" entry in Google
@@ -60,10 +60,10 @@ CONTENT_PATH = os.environ.get(
 
 PORT = int(os.environ.get("PORT", "8080"))
 
-# How many page dots the header shows. This Week is dot 1 (Morning Brief, when
-# enabled, comes first). Raise this when the playlist has more screens.
-# 0 = just the calendar screens.
-PAGE_COUNT = int(os.environ.get("PAGE_COUNT", "0") or 0)
+# The screens in playlist order, which sets the header dots: one dot per
+# screen, with this screen's dot filled. Same setting for every service.
+# Names: week, polestar, energy, fitness, weather (and brief, if it's on).
+SCREEN_ORDER = [s.lower() for s in _split(os.environ.get("SCREEN_ORDER", ""))] or ["week"]
 
 # Pin "now" for testing, e.g. NOW=2026-11-12T06:02
 NOW_OVERRIDE = os.environ.get("NOW", "").strip()

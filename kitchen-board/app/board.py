@@ -17,12 +17,9 @@ _env = Environment(
     lstrip_blocks=True,
 )
 
-PAGES = ["brief", "week"]
-
-
 def _dot_pages() -> list[str]:
-    """Screens that get a header dot, in playlist order."""
-    return PAGES if config.BRIEF_ENABLED else ["week"]
+    """Screens that get a header dot, in playlist order (SCREEN_ORDER)."""
+    return config.SCREEN_ORDER
 
 # Values LaraPaper fills in from the device (see recipes/*.liquid).
 PLACEHOLDER_PREVIEW = {
@@ -60,7 +57,7 @@ def _common(page: str, n: datetime, content: dict) -> dict:
     return {
         "page": page,
         "page_index": _dot_pages().index(page) if page in _dot_pages() else -1,
-        "page_count": max(config.PAGE_COUNT, len(_dot_pages())),
+        "page_count": len(_dot_pages()),
         "board_name": str(content.get("board_name") or "").upper(),
         "updated": clock_ampm(n),
         "font_base": config.FONT_BASE_URL,

@@ -1,0 +1,27 @@
+{% assign kbh_font = trmnl.plugin_settings.custom_fields_values.font_base | default: "http://kitchen-board:8080" %}
+<style>
+  /* Fonts are served by the kitchen-board container. */
+  @font-face { font-family: "KB Mono"; src: url("{{ kbh_font }}/fonts/SpaceMono-Regular.ttf") format("truetype"); font-weight: 400; }
+  @font-face { font-family: "KB Mono"; src: url("{{ kbh_font }}/fonts/SpaceMono-Bold.ttf") format("truetype"); font-weight: 700; }
+/*HEADER_CSS*/
+</style>
+
+{% comment %}
+  The header row. full.liquid renders "screen_header" with title, device
+  (trmnl.device), cfv (the recipe's custom field values), pn: page_number,
+  pc: page_count and, optionally, as_of. pn / pc come from the bridge's data (worked out from SCREEN_ORDER). If an
+  older bridge doesn't send them, the recipe's "Page dot" and "Total pages"
+  settings are used instead. as_of is optional.
+{% endcomment %}
+{% template screen_header %}{% assign pn = pn | default: cfv.page_number | default: 1 | plus: 0 %}{% assign pc = pc | default: cfv.page_count | default: pn | plus: 0 %}{% if pc < pn %}{% assign pc = pn %}{% endif %}{% assign batt = device.percent_charged | default: 0 | round %}{% assign fill = batt | times: 20 | divided_by: 100 | round %}{% comment %} LaraPaper reports Wi-Fi as bars, 0-3. {% endcomment %}{% assign ws = device.wifi_strength | default: 3 %}{% if ws >= 3 %}{% assign wc = "wifi-3" %}{% elsif ws == 2 %}{% assign wc = "wifi-2" %}{% else %}{% assign wc = "wifi-1" %}{% endif %}
+<div class="kbh">
+  <div class="dots">{% for i in (1..pc) %}<div class="dot{% if i == pn %} on{% endif %}"></div>{% endfor %}</div>
+  <div class="hdr-title">{{ title }}</div>
+  <div class="hdr-right">
+    {% if as_of %}<span class="upd">UPDATED {{ as_of | upcase }}</span>{% endif %}
+    <svg class="wifi {{ wc }}" viewBox="0 0 21 16"><path class="w3" d="M1.6 5.6a12.6 12.6 0 0 1 17.8 0"/><path class="w2" d="M4.6 8.7a8.3 8.3 0 0 1 11.8 0"/><circle cx="10.5" cy="13.2" r="2.1"/></svg>
+    <div class="batt"><div class="batt-fill" style="width:{{ fill }}px"></div></div>
+    <span>{{ batt }}%</span>
+  </div>
+</div>
+{% endtemplate %}

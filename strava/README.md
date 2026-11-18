@@ -55,7 +55,7 @@ Hours are moving time. Relative effort is Strava's own score, so it only shows i
 
    - Paste the three `STRAVA_` lines from step 2.
    - `STRAVA_BRIDGE_TOKEN`: make one with `python3 -c "import secrets; print(secrets.token_urlsafe(24))"`.
-   - Set `KB_PAGE_COUNT=4` so This Week shows four dots.
+   - Check that `SCREEN_ORDER` lists `fitness` where you want its dot (see *Page dots* in the main README).
    - For a first look without signing in, set `STRAVA_DEMO=1`.
 
 4. **Start it.**
@@ -68,11 +68,9 @@ Hours are moving time. Relative effort is Strava's own score, so it only shows i
 5. **Import the recipe in LaraPaper.** Go to Plugins → Add Recipe → Import Recipe Archive and upload `strava/strava-recipe.zip` (download it from GitHub). Then open its settings:
    - **Bridge URL:** `http://strava-bridge:8765`
    - **Bridge token:** the same value as `STRAVA_BRIDGE_TOKEN`
-   - **Page dot / Total pages:** 4 and 4 (the defaults)
+   - **Page dot / Total pages:** leave the defaults. The bridge sends the real values, worked out from `SCREEN_ORDER`.
 
-6. **Add a fourth dot to the other screens.** Open the Polestar and Home Energy Consumption recipes' settings and set **Total pages** to `4`.
-
-7. **Add it to a playlist.** On the E1001's device page, add *Fitness* to the **Day** playlist with the other screens.
+6. **Add it to a playlist.** On the E1001's device page, add *Fitness* to the **Day** playlist with the other screens.
 
 ## Extras
 

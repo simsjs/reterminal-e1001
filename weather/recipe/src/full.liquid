@@ -1,6 +1,6 @@
 <div class="view view--full">
   <div class="wxx">
-  {% render "wx_header", device: trmnl.device, cfv: trmnl.plugin_settings.custom_fields_values, as_of: as_of %}
+  {% render "screen_header", title: "WEATHER", device: trmnl.device, cfv: trmnl.plugin_settings.custom_fields_values, pn: page_number, pc: page_count, as_of: as_of %}
   <div class="wxx-body">
     <div class="wx">
     {% if ok != true %}
