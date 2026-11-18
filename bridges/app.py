@@ -20,18 +20,20 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
+import polestar
 import strava
 import weather
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("bridges")
 
-SCREENS = [weather, strava]
+SCREENS = [weather, strava, polestar]
 
 
 @asynccontextmanager
@@ -47,6 +49,16 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="bridges", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def collapse_slashes(request: Request, call_next):
+    # A Bridge URL saved with a trailing slash yields "//polestar.json"; accept it.
+    path = request.scope["path"]
+    if "//" in path:
+        request.scope["path"] = re.sub("/{2,}", "/", path)
+    return await call_next(request)
+
 for _screen in SCREENS:
     app.include_router(_screen.router)
 

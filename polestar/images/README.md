@@ -6,4 +6,4 @@ These files stay on the Pi and are ignored by git.
 - `cars/`: one or more car pictures (jpg or png). One is picked at random each time the screen refreshes. Drawings on a white background look best on e-ink.
 
 The bridge converts everything to crisp 1-bit at startup. After adding or changing images, run
-`docker compose restart polestar-bridge` from `larapaper/`.
+`docker compose restart bridges` from `larapaper/`.

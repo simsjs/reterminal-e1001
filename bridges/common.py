@@ -29,7 +29,8 @@ def check_token(request: Request, token: str) -> None:
     """If the screen has a token, require it as `Authorization: Bearer ...` or ?token=."""
     if not token:
         return
-    got = request.headers.get("authorization", "").removeprefix("Bearer ").strip() or request.query_params.get("token", "")
+    header = request.headers.get("authorization", "")
+    got = header[7:].strip() if header.lower().startswith("bearer ") else request.query_params.get("token", "")
     if not secrets.compare_digest(got, token):
         raise HTTPException(401, "bad token")
 

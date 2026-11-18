@@ -5,11 +5,11 @@ A full-screen LaraPaper recipe for the E1001 showing both cars (Snow and Midnigh
 - charge %, range and charge limit
 - a **Charging** pill and completion time, shown only while charging
 - a charge bar with a limit line
-- odometer, efficiency and when the car last reported. Efficiency comes from, in order: the car's **automatic trip** average, then its **manual trip** average, then the bridge's **own calculation**, using the first believable one (8–60 kWh/100 km). A calculated value is marked with "≈". To calculate, the bridge records each stretch of driving between refreshes (distance and battery % used, skipping any that include charging). It then works out efficiency over the last ~500 km using the car's battery size (`POLESTAR_BATTERY_KWH`). It needs about 40 km (25 mi) of driving before the first number appears, and the history is kept in the `polestar` Docker volume. Every time the numbers change, the bridge log lists all of them: `docker compose logs polestar-bridge | grep Consumption`.
+- odometer, efficiency and when the car last reported. Efficiency comes from, in order: the car's **automatic trip** average, then its **manual trip** average, then the bridge's **own calculation**, using the first believable one (8–60 kWh/100 km). A calculated value is marked with "≈". To calculate, the bridge records each stretch of driving between refreshes (distance and battery % used, skipping any that include charging). It then works out efficiency over the last ~500 km using the car's battery size (`POLESTAR_BATTERY_KWH`). It needs about 40 km (25 mi) of driving before the first number appears, and the history is kept in the `polestar` Docker volume. Every time the numbers change, the bridge log lists all of them: `docker compose logs bridges | grep Consumption`.
 
 ## How it works
 
-Polestar has no public API, so `bridge/` runs a small Python service (`polestar-bridge` in `larapaper/docker-compose.yml`). It uses the community library [pypolestar](https://github.com/pypolestar/pypolestar), the one behind the Home Assistant integration, to log in with your Polestar ID and read each car's data every 10 minutes. It then serves the data to LaraPaper as JSON. It only reads: it never sends commands to the cars and never wakes them. Your Polestar password stays in `larapaper/.env` on the Pi.
+Polestar has no public API, so the Polestar screen is one part of the `bridges` service (`bridges/polestar.py`; `bridges` in `larapaper/docker-compose.yml`, which LaraPaper still reaches as `polestar-bridge`). It uses the community library [pypolestar](https://github.com/pypolestar/pypolestar), the one behind the Home Assistant integration, to log in with your Polestar ID and read each car's data every 10 minutes. It then serves the data to LaraPaper as JSON. It only reads: it never sends commands to the cars and never wakes them. Your Polestar password stays in `larapaper/.env` on the Pi.
 
 ## Setup on the Pi
 
@@ -39,7 +39,7 @@ Polestar has no public API, so `bridge/` runs a small Python service (`polestar-
 
    ```bash
    docker compose up -d --build
-   docker compose logs -f polestar-bridge   # look for "Logged in; VINs: ..."
+   docker compose logs -f bridges   # look for "polestar: Logged in; VINs: ..."
    ```
 
 4. **Import the recipe in LaraPaper.** Go to Plugins → Add Recipe → Import Recipe Archive and upload `polestar/polestar-recipe.zip`. You can download it from GitHub. Then open its settings:
@@ -56,7 +56,7 @@ Polestar has no public API, so `bridge/` runs a small Python service (`polestar-
 - **Raw data:** `http://localhost:4569/polestar.json?token=<POLESTAR_BRIDGE_TOKEN>`
 - **Status:** `http://localhost:4569/health`
 
-After changing images, run `docker compose restart polestar-bridge`.
+After changing images, run `docker compose restart bridges`.
 
 ## Settings (`larapaper/.env`)
 
@@ -66,7 +66,7 @@ After changing images, run `docker compose restart polestar-bridge`.
 | `POLESTAR_VINS` | all | Limit to specific VINs, comma-separated |
 | `POLESTAR_DEMO` | 0 | `1` shows two fake cars |
 
-Image layout is set on the bridge (`PHOTO_WIDTH`, `PHOTO_ZOOM`, `PHOTO_FOCUS`, `LOGO_SIZE`, `LOGO_SMALL_SIZE`). See the top of `bridge/polestar_bridge.py`.
+Image layout can be tuned with `POLESTAR_PHOTO_WIDTH`, `POLESTAR_PHOTO_ZOOM`, `POLESTAR_PHOTO_FOCUS`, `POLESTAR_LOGO_SIZE` and `POLESTAR_LOGO_SMALL_SIZE` (add them to the `bridges` service's environment). See the top of `bridges/polestar.py`.
 
 ## Notes
 

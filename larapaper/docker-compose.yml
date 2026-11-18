@@ -54,30 +54,6 @@ services:
       # A folder mount, so edits to content.yml show up after a git pull.
       - ../kitchen-board/content:/app/content:ro
 
-  polestar-bridge:
-    build: ../polestar/bridge
-    restart: unless-stopped
-    ports:
-      - "${LOCAL_BIND:-127.0.0.1}:4569:8765"   # car images page, from the Pi only: http://localhost:4569/images?token=<POLESTAR_BRIDGE_TOKEN>
-    environment:
-      - TZ=${TZ:-America/New_York}
-      - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather}   # page dots, see README
-      - POLESTAR_USERNAME=${POLESTAR_USERNAME:-}
-      - POLESTAR_PASSWORD=${POLESTAR_PASSWORD:-}
-      - BRIDGE_TOKEN=${POLESTAR_BRIDGE_TOKEN:-}
-      - CAR_NAMES=${POLESTAR_CAR_NAMES:-}
-      - POLESTAR_VINS=${POLESTAR_VINS:-}
-      - REFRESH_MINUTES=${POLESTAR_REFRESH_MINUTES:-10}
-      - DEMO=${POLESTAR_DEMO:-0}
-      - POLESTAR_BATTERY_KWH=${POLESTAR_BATTERY_KWH:-}
-      - LOGO_FILE=/app/images/logo.png
-      - PHOTO_FILE=/app/images/cars
-    volumes:
-      # Your own images (not in git): logo.png and a cars/ folder of car pictures.
-      - ../polestar/images:/app/images:ro
-      # Driving history for the self-calculated efficiency.
-      - polestar:/data
-
   dominion-bridge:
     build: ../dominion/bridge
     restart: unless-stopped
@@ -107,7 +83,9 @@ services:
         aliases:
           - weather-bridge
           - strava-bridge
+          - polestar-bridge
     ports:
+      - "${LOCAL_BIND:-127.0.0.1}:4569:8765"   # Polestar car images page, from the Pi only: http://localhost:4569/images?token=<POLESTAR_BRIDGE_TOKEN>
       - "${LOCAL_BIND:-127.0.0.1}:4571:8765"   # fitness raw data, from the Pi only: http://localhost:4571/fitness.json?token=<STRAVA_BRIDGE_TOKEN>
       - "${LOCAL_BIND:-127.0.0.1}:4572:8765"   # weather raw data, from the Pi only: http://localhost:4572/weather.json
     environment:
@@ -132,11 +110,24 @@ services:
       - STRAVA_RUCK_WORDS=${STRAVA_RUCK_WORDS:-ruck}
       - STRAVA_DEMO=${STRAVA_DEMO:-0}
       - STRAVA_DEMO_LAYOUT=${STRAVA_DEMO_LAYOUT:-ride}
+      # Polestar screen
+      - POLESTAR_USERNAME=${POLESTAR_USERNAME:-}
+      - POLESTAR_PASSWORD=${POLESTAR_PASSWORD:-}
+      - POLESTAR_BRIDGE_TOKEN=${POLESTAR_BRIDGE_TOKEN:-}
+      - POLESTAR_CAR_NAMES=${POLESTAR_CAR_NAMES:-}
+      - POLESTAR_VINS=${POLESTAR_VINS:-}
+      - POLESTAR_REFRESH_MINUTES=${POLESTAR_REFRESH_MINUTES:-10}
+      - POLESTAR_DEMO=${POLESTAR_DEMO:-0}
+      - POLESTAR_BATTERY_KWH=${POLESTAR_BATTERY_KWH:-}
     volumes:
       # Your own pictures of the house for each season and weather (not in git).
       - ../weather/images:/app/images/weather:ro
       # The newest Strava refresh token (Strava can hand out a new one on any refresh).
       - strava:/data/strava
+      # Your own Polestar images (not in git): logo.png and a cars/ folder of car pictures.
+      - ../polestar/images:/app/images/polestar:ro
+      # Polestar driving history for the self-calculated efficiency.
+      - polestar:/data/polestar
 
 volumes:
   database:

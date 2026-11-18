@@ -22,15 +22,14 @@ fitness screen from Strava (see [`strava/`](strava/README.md)) and a weather scr
   `content/content.yml`. It renders the screen's HTML and serves it as JSON at
   `/api/week`. It also serves the header fonts for every screen.
 - `larapaper/docker-compose.yml` runs LaraPaper, the calendar screen, the
-  `bridges` service and (until they move into it) the Polestar and Dominion
-  bridges together.
+  `bridges` service and (until it moves into it) the Dominion bridge together.
 - `bridges/` is one Python service for the screens that need outside data. Each
-  screen is its own module there (so far `weather.py` and `strava.py`) with its own routes,
+  screen is its own module there (so far `weather.py`, `strava.py` and `polestar.py`) with its own routes,
   token and refresh loop; one screen failing doesn't stop the others.
   `http://localhost:4572/health` shows each screen's status. LaraPaper still
   reaches each screen by its old name (`weather-bridge`, ...).
-- `polestar/` holds the Polestar status screen: a small bridge service that
-  reads both cars from Polestar, and its LaraPaper recipe. Setup is in
+- `polestar/` holds the Polestar status screen's LaraPaper recipe and pictures.
+  Its data (both cars, read from Polestar) comes from `bridges/polestar.py`. Setup is in
   [`polestar/README.md`](polestar/README.md).
 - `dominion/` holds the home energy screen: a small bridge that reads your
   Dominion Energy smart-meter data, and its LaraPaper recipe. Setup is in

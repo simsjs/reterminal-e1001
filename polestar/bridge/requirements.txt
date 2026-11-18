@@ -1,5 +1,0 @@
-pypolestar==1.12.7
-backoff>=2.2.1        # pypolestar 1.12.7 imports it but forgets to declare it
-fastapi>=0.115
-uvicorn>=0.30
-pillow>=10       # only used if you add a logo image

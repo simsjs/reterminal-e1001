@@ -1,5 +1,5 @@
 """
-Polestar -> LaraPaper bridge.
+Polestar screen for the bridges service (was polestar-bridge).
 
 Logs in to your Polestar account with the community `pypolestar` library,
 refreshes every few minutes in the background, and serves a small,
@@ -10,28 +10,31 @@ pre-formatted JSON document that a LaraPaper (TRMNL BYOS) recipe polls.
     GET /images.json                    the same links as JSON
     GET /health
 
-Auth: send `Authorization: Bearer <BRIDGE_TOKEN>` (or ?token=...).
+Auth: send `Authorization: Bearer <POLESTAR_BRIDGE_TOKEN>` (or ?token=...).
 
 Environment:
     POLESTAR_USERNAME   Polestar ID e-mail             (not needed in DEMO mode)
     POLESTAR_PASSWORD   Polestar ID password
     POLESTAR_VINS       optional, comma-separated VINs to include (default: all)
-    CAR_NAMES           optional, "VIN_or_last4=Nickname,..." e.g. "4321=Blue,8765=Snow"
-    BRIDGE_TOKEN        shared secret LaraPaper must send (strongly recommended)
-    REFRESH_MINUTES     background refresh interval, default 10
+    POLESTAR_CAR_NAMES  optional, "VIN_or_last4=Nickname,..." e.g. "4321=Blue,8765=Snow"
+    POLESTAR_BRIDGE_TOKEN    shared secret LaraPaper must send (strongly recommended)
+    POLESTAR_REFRESH_MINUTES background refresh interval, default 10
+    POLESTAR_STALE_HOURS     data older than this is marked stale, default 6
+    POLESTAR_STATE_DIR       where the efficiency history is kept, default /data/polestar
     TZ                  IANA time zone for clock labels, e.g. America/New_York
-    DEMO                "1" to serve two fake cars without logging in
-    LOGO_FILE           optional image shown on the right of the panel (default: logo.png next to
-                        this script, if present). Converted to crisp 1-bit for e-ink at startup.
-    LOGO_SIZE           pixel size of the logo box on screen, default 220
-    LOGO_SMALL_SIZE     pixel size of the bold logo in front of each car's name, default 46
-    PHOTO_FILE          optional car image(s) for the left of the two-car screen: a file, a folder, or a
-                        comma-separated list (default: every image in cars/ next to this script, plus
-                        car.jpg/png). With several, one is picked at random on each refresh.
-    PHOTO_FOCUS         0-1, which part of a wide image to keep (0 = left edge). Default 0 for drawings
+    POLESTAR_DEMO       "1" to serve two fake cars without logging in
+    POLESTAR_LOGO_FILE  optional image shown on the right of the panel (default:
+                        /app/images/polestar/logo.png, or the same name as .jpg etc.).
+                        Converted to crisp 1-bit for e-ink at startup.
+    POLESTAR_LOGO_SIZE  pixel size of the logo box on screen, default 220
+    POLESTAR_LOGO_SMALL_SIZE  pixel size of the bold logo in front of each car's name, default 46
+    POLESTAR_PHOTO_FILE optional car image(s) for the left of the two-car screen: a file, a folder, or a
+                        comma-separated list (default: /app/images/polestar/cars). With several, one is
+                        picked at random on each refresh.
+    POLESTAR_PHOTO_FOCUS  0-1, which part of a wide image to keep (0 = left edge). Default 0 for drawings
                         on a light background, 0.3 for photos
-    PHOTO_ZOOM          drawings only: 1.0 (default) fits the whole car; larger values enlarge and crop it
-    PHOTO_WIDTH         width of the image panel in px, default 480 (60% of the screen), 300-520
+    POLESTAR_PHOTO_ZOOM drawings only: 1.0 (default) fits the whole car; larger values enlarge and crop it
+    POLESTAR_PHOTO_WIDTH  width of the image panel in px, default 480 (60% of the screen), 300-520
 """
 
 from __future__ import annotations
@@ -46,24 +49,26 @@ import logging
 import math
 import os
 import random
-import re
 import secrets
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
-log = logging.getLogger("polestar-bridge")
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
+from common import check_token, flag, page_info, setting
+
+NAME = "polestar"
+log = logging.getLogger("polestar")
+IMAGES = "/app/images/polestar"
 
 KM_PER_MI = 1.609344
-REFRESH_MINUTES = max(2, int(os.getenv("REFRESH_MINUTES", "10")))
-STALE_AFTER = timedelta(hours=int(os.getenv("STALE_HOURS", "6")))
-BRIDGE_TOKEN = os.getenv("BRIDGE_TOKEN", "")
-DEMO = os.getenv("DEMO", "").lower() in {"1", "true", "yes"}
+REFRESH_MINUTES = max(2, int(setting("POLESTAR", "REFRESH_MINUTES", "10") or 10))
+STALE_AFTER = timedelta(hours=int(setting("POLESTAR", "STALE_HOURS", "6") or 6))
+BRIDGE_TOKEN = setting("POLESTAR", "BRIDGE_TOKEN")
+DEMO = flag("POLESTAR", "DEMO")
 TZ = ZoneInfo(os.getenv("TZ") or "UTC")
 
 
@@ -252,7 +257,7 @@ class EfficiencyTracker:
     KEEP = timedelta(days=60)
 
     def __init__(self) -> None:
-        state_dir = os.getenv("STATE_DIR", "/app/state")
+        state_dir = setting("POLESTAR", "STATE_DIR", "/data/polestar")
         self.path = os.path.join(state_dir, "efficiency.json")
         self.data: dict[str, Any] = {}
         try:
@@ -450,7 +455,7 @@ async def refresher() -> None:
                 state.cars = _demo_cars()
                 state.last_success = datetime.now(timezone.utc)
             elif not (os.getenv("POLESTAR_USERNAME") and os.getenv("POLESTAR_PASSWORD")):
-                state.error = "Set POLESTAR_USERNAME and POLESTAR_PASSWORD in larapaper/.env (or DEMO=1)"
+                state.error = "Set POLESTAR_USERNAME and POLESTAR_PASSWORD in larapaper/.env (or POLESTAR_DEMO=1)"
                 log.warning(state.error)
                 await asyncio.sleep(300)
                 continue
@@ -495,7 +500,7 @@ def _num(value: float | None, digits: int = 0) -> str | None:
 
 def _name_overrides() -> dict[str, str]:
     overrides: dict[str, str] = {}
-    for pair in os.getenv("CAR_NAMES", "").split(","):
+    for pair in setting("POLESTAR", "CAR_NAMES").split(","):
         if "=" in pair:
             key, name = pair.split("=", 1)
             overrides[key.strip().upper()] = name.strip()
@@ -737,26 +742,27 @@ def _data_uri(png: bytes) -> str:
 
 
 def _find_file(env_name: str, *defaults: str) -> str:
-    here = os.path.dirname(os.path.abspath(__file__))
+    """The file named by env_name, else the first default (in IMAGES) that exists. A missing
+    logo.png falls back to the same name with another extension in _load_logo."""
     if os.getenv(env_name):
         return os.environ[env_name]
     for name in defaults:
-        path = os.path.join(here, name)
+        path = os.path.join(IMAGES, name)
         if os.path.isfile(path):
             return path
-    return ""
+    return os.path.join(IMAGES, defaults[0]) if defaults else ""
 
 
 def _load_logo() -> dict[str, Any] | None:
-    path = _find_file("LOGO_FILE", "logo.png")
+    path = _find_file("POLESTAR_LOGO_FILE", "logo.png")
     if path and not os.path.isfile(path):
         # logo.png missing? Accept the same name with another image extension.
         stem = os.path.splitext(path)[0]
-        path = next((stem + ext for ext in _IMAGE_EXTS if os.path.isfile(stem + ext)), path)
+        path = next((stem + ext for ext in _IMAGE_EXTS if os.path.isfile(stem + ext)), "")
     if not path:
         return None
-    size = int(os.getenv("LOGO_SIZE", "220"))
-    small = int(os.getenv("LOGO_SMALL_SIZE", "46"))  # the one in front of each car's name
+    size = int(setting("POLESTAR", "LOGO_SIZE", "220"))
+    small = int(setting("POLESTAR", "LOGO_SMALL_SIZE", "46"))  # the one in front of each car's name
     try:
         logo = {"src": _data_uri(eink_logo_png(path, size)), "size": size,
                 "small_src": _data_uri(eink_logo_png(path, small, bold=True)), "small_size": small}
@@ -771,12 +777,11 @@ _IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".webp")
 
 
 def _photo_paths() -> list[str]:
-    """Every car image to rotate through: PHOTO_FILE (comma-separated files or a folder),
-    otherwise everything in cars/ next to this script, plus a single car.jpg/png if present."""
-    here = os.path.dirname(os.path.abspath(__file__))
-    entries = [e.strip() for e in os.getenv("PHOTO_FILE", "").split(",") if e.strip()]
+    """Every car image to rotate through: POLESTAR_PHOTO_FILE (comma-separated files or a folder),
+    otherwise everything in cars/ in the pictures folder, plus a single car.jpg/png if present."""
+    entries = [e.strip() for e in setting("POLESTAR", "PHOTO_FILE").split(",") if e.strip()]
     if not entries:
-        entries = [os.path.join(here, "cars")] + [os.path.join(here, n) for n in ("car.jpg", "car.jpeg", "car.png")]
+        entries = [os.path.join(IMAGES, "cars")] + [os.path.join(IMAGES, n) for n in ("car.jpg", "car.jpeg", "car.png")]
     paths: list[str] = []
     for entry in entries:
         if os.path.isdir(entry):
@@ -788,9 +793,9 @@ def _photo_paths() -> list[str]:
 
 
 def _load_photos() -> list[dict[str, Any]]:
-    width = min(max(int(os.getenv("PHOTO_WIDTH", "480")), 300), 520)
-    focus = os.getenv("PHOTO_FOCUS")
-    zoom = float(os.getenv("PHOTO_ZOOM", "1.0"))
+    width = min(max(int(setting("POLESTAR", "PHOTO_WIDTH", "480")), 300), 520)
+    focus = setting("POLESTAR", "PHOTO_FOCUS")
+    zoom = float(setting("POLESTAR", "PHOTO_ZOOM", "1.0"))
     photos = []
     for path in _photo_paths():
         try:
@@ -810,60 +815,26 @@ PHOTOS: list[dict[str, Any]] = []
 # --------------------------------------------------------------------------- #
 # HTTP
 # --------------------------------------------------------------------------- #
-@contextlib.asynccontextmanager
-async def lifespan(_: FastAPI):
+router = APIRouter()
+
+
+def start() -> list:
     global LOGO, PHOTOS
     LOGO = _load_logo()
     PHOTOS = _load_photos()
     if not BRIDGE_TOKEN:
-        log.warning("BRIDGE_TOKEN is not set: anyone on your network can read car data. "
+        log.warning("POLESTAR_BRIDGE_TOKEN is not set: anyone on your network can read car data. "
                     "Suggested token: %s", secrets.token_urlsafe(24))
-    task = asyncio.create_task(refresher())
-    yield
-    task.cancel()
+    return [refresher()]
 
 
-app = FastAPI(title="Polestar bridge for LaraPaper", lifespan=lifespan)
-
-
-@app.middleware("http")
-async def collapse_slashes(request: Request, call_next):
-    # A Bridge URL saved with a trailing slash yields "//polestar.json"; accept it.
-    path = request.scope["path"]
-    if "//" in path:
-        request.scope["path"] = re.sub("/{2,}", "/", path)
-    return await call_next(request)
-
-
-def _check_token(request: Request) -> None:
-    if not BRIDGE_TOKEN:
-        return
-    header = request.headers.get("authorization", "")
-    supplied = header[7:] if header.lower().startswith("bearer ") else request.query_params.get("token", "")
-    if not secrets.compare_digest(supplied, BRIDGE_TOKEN):
-        raise HTTPException(status_code=401, detail="bad token")
-
-
-@app.get("/health")
-async def health() -> dict[str, Any]:
+def health() -> dict[str, Any]:
     return {"ok": state.last_success is not None, "cars": len(state.cars), "error": state.error, "demo": DEMO}
 
 
-SCREEN_NAME = "polestar"
-
-
-# Page dots: SCREEN_ORDER lists the screens in playlist order (same setting for
-# every service). This screen's dot number and the total go out with the data.
-def _page_info() -> dict:
-    order = [s.strip().lower() for s in os.environ.get("SCREEN_ORDER", "").split(",") if s.strip()]
-    if SCREEN_NAME not in order:
-        return {}
-    return {"page_number": order.index(SCREEN_NAME) + 1, "page_count": len(order)}
-
-
-@app.get("/polestar.json")
+@router.get("/polestar.json")
 async def polestar(request: Request, units: str = "imperial") -> JSONResponse:
-    _check_token(request)
+    check_token(request, BRIDGE_TOKEN)
     imperial = units.lower() not in {"metric", "km"}
     now = datetime.now(timezone.utc)
     names = _display_names(state.cars)
@@ -881,7 +852,7 @@ async def polestar(request: Request, units: str = "imperial") -> JSONResponse:
         "logo": LOGO,
         "photo": random.choice(PHOTOS) if PHOTOS else None,  # a different pick on each refresh
     }
-    body.update(_page_info())
+    body.update(page_info(NAME))
     return JSONResponse(body, headers={"Cache-Control": "no-store"})
 
 
@@ -891,17 +862,17 @@ def _images_payload() -> list[dict[str, Any]]:
              "vin_tail": c.vin[-4:], "images": c.images} for c in _ordered(state.cars)]
 
 
-@app.get("/images.json")
+@router.get("/images.json")
 async def images_json(request: Request) -> JSONResponse:
     """Links to Polestar's official images of each of your cars."""
-    _check_token(request)
+    check_token(request, BRIDGE_TOKEN)
     return JSONResponse({"cars": _images_payload(), "demo": DEMO}, headers={"Cache-Control": "no-store"})
 
 
-@app.get("/images", response_class=HTMLResponse)
+@router.get("/images", response_class=HTMLResponse)
 async def images_page(request: Request) -> HTMLResponse:
     """The same links as a page you can open in a browser: /images?token=YOUR_TOKEN"""
-    _check_token(request)
+    check_token(request, BRIDGE_TOKEN)
     parts = ["<!doctype html><meta charset='utf-8'><meta name='viewport' content='width=device-width'>"
              "<title>Polestar images</title><style>body{font:15px system-ui,sans-serif;margin:24px;max-width:1100px}"
              "h2{margin:28px 0 4px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}"
@@ -930,8 +901,3 @@ async def images_page(request: Request) -> HTMLResponse:
         parts.append("</div>")
     return HTMLResponse("".join(parts), headers={"Cache-Control": "no-store"})
 
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8765")))
