@@ -1,0 +1,14 @@
+<div class="view view--quadrant">
+  <div class="layout" style="padding: 0">
+    <div class="fb fb-col" style="justify-content: center; gap: 8px; padding: 8px 16px">
+    {% if ok != true or no_games %}
+      <div class="fb-empty"><div style="font-size: 22px; font-weight: 700">No fixtures</div></div>
+    {% else %}
+      <div style="font-size: 30px; font-weight: 800; letter-spacing: -0.03em">{{ title }}</div>
+      <div style="font-size: 15px; font-weight: 600">{{ status.text }}</div>
+      {% if status.tag != "" %}<div><span class="fb-tag">{{ status.tag }}</span></div>{% endif %}
+    {% endif %}
+    </div>
+  </div>
+  <div class="title_bar"><span class="title">Premier League</span><span class="instance">{{ span }}</span></div>
+</div>

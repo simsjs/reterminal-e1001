@@ -1,0 +1,122 @@
+{% comment %} ==== BEGIN shared header: copied from shared/ by tools/build-recipes.sh. Edit it there, not here. ==== {% endcomment %}
+{% assign kbh_font = trmnl.plugin_settings.custom_fields_values.font_base | default: "http://kitchen-board:8080" %}
+<style>
+  /* Fonts are served by the kitchen-board container. */
+  @font-face { font-family: "KB Mono"; src: url("{{ kbh_font }}/fonts/SpaceMono-Regular.ttf") format("truetype"); font-weight: 400; }
+  @font-face { font-family: "KB Mono"; src: url("{{ kbh_font }}/fonts/SpaceMono-Bold.ttf") format("truetype"); font-weight: 700; }
+  /* Screen header: page dots, title, Wi-Fi and battery. Shared by every screen.
+     This is the only place to change how the header looks. After editing, run
+     tools/build-recipes.sh, which copies it into the four recipes and into the
+     calendar service. (e-ink is 1-bit, so everything is pure black or white.) */
+  .kbh { position: absolute; left: 0; top: 0; width: 800px; height: 44px; border-bottom: 3px solid #000; box-sizing: border-box;
+    display: flex; align-items: center; padding: 0 21px 0 20px; color: #000; }
+  .kbh * { box-sizing: border-box; }
+  .kbh .dots { display: flex; gap: 6px; margin-right: 13px; }
+  .kbh .dot { width: 10px; height: 10px; border: 2px solid #000; border-radius: 50%; }
+  .kbh .dot.on { background: #000; }
+  .kbh .hdr-title { font: 700 14px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.8px; }
+  .kbh .hdr-right { margin-left: auto; display: flex; align-items: center; font: 700 14px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.8px; }
+  .kbh .upd { margin-right: 14px; }
+  .kbh .wifi { margin: 0 14px 0 0; width: 21px; height: 16px; }
+  .kbh .wifi path { fill: none; stroke: #000; stroke-width: 2.6; stroke-linecap: round; }
+  .kbh .wifi circle { fill: #000; }
+  /* Unlit bars: a thin dotted arc, since gray drops out on e-ink. */
+  .kbh .wifi-2 .w3, .kbh .wifi-1 .w3, .kbh .wifi-1 .w2 { stroke-width: 1.5; stroke-dasharray: 2 1.8; stroke-linecap: butt; }
+  .kbh .batt { position: relative; width: 27px; height: 14px; border: 2.5px solid #000; border-radius: 3px; margin-right: 9px; }
+  .kbh .batt::after { content: ""; position: absolute; right: -5px; top: 3px; width: 2.5px; height: 4px; background: #000; border-radius: 0 1px 1px 0; }
+  .kbh .batt-fill { position: absolute; left: 1.5px; top: 1.5px; bottom: 1.5px; background: #000; }
+</style>
+
+{% comment %}
+  The header row. full.liquid renders "screen_header" with title, device
+  (trmnl.device), cfv (the recipe's custom field values), pn: page_number,
+  pc: page_count and, optionally, as_of. pn / pc come from the bridge's data (worked out from SCREEN_ORDER). If an
+  older bridge doesn't send them, the recipe's "Page dot" and "Total pages"
+  settings are used instead. as_of is optional.
+{% endcomment %}
+{% template screen_header %}{% assign pn = pn | default: cfv.page_number | default: 1 | plus: 0 %}{% assign pc = pc | default: cfv.page_count | default: pn | plus: 0 %}{% if pc < pn %}{% assign pc = pn %}{% endif %}{% assign batt = device.percent_charged | default: 0 | round %}{% assign fill = batt | times: 20 | divided_by: 100 | round %}{% comment %} LaraPaper reports Wi-Fi as bars, 0-3. {% endcomment %}{% assign ws = device.wifi_strength | default: 3 %}{% if ws >= 3 %}{% assign wc = "wifi-3" %}{% elsif ws == 2 %}{% assign wc = "wifi-2" %}{% else %}{% assign wc = "wifi-1" %}{% endif %}
+<div class="kbh">
+  <div class="dots">{% for i in (1..pc) %}<div class="dot{% if i == pn %} on{% endif %}"></div>{% endfor %}</div>
+  <div class="hdr-title">{{ title }}</div>
+  <div class="hdr-right">
+    {% if as_of %}<span class="upd">UPDATED {{ as_of | upcase }}</span>{% endif %}
+    <svg class="wifi {{ wc }}" viewBox="0 0 21 16"><path class="w3" d="M1.6 5.6a12.6 12.6 0 0 1 17.8 0"/><path class="w2" d="M4.6 8.7a8.3 8.3 0 0 1 11.8 0"/><circle cx="10.5" cy="13.2" r="2.1"/></svg>
+    <div class="batt"><div class="batt-fill" style="width:{{ fill }}px"></div></div>
+    <span>{{ batt }}%</span>
+  </div>
+</div>
+{% endtemplate %}
+{% comment %} ==== END shared header ==== {% endcomment %}
+<style>
+  .fbx { position: fixed; top: 0; left: 0; z-index: 2147483647; width: 800px; height: 480px; overflow: hidden; background: #fff; color: #000; }
+  .fbx-body { position: absolute; top: 44px; left: 0; width: 800px; height: 436px; display: flex; }
+
+  /* Premier League panel: pure black and white so it stays crisp on 1-bit e-ink (gray drops out). */
+  .fb { box-sizing: border-box; display: flex; width: 100%; height: 100%; color: #000; font-family: "Inter", "Helvetica Neue", Arial, sans-serif; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .fb * { box-sizing: border-box; }
+  .fb-col { display: flex; flex-direction: column; min-width: 0; }
+  .fb-label { font: 700 12px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+  .fb-mono { font-family: "KB Mono", "Courier New", monospace; }
+
+  /* Club badges: a plain roundel with the club's 3-letter code. */
+  .fb-badge { flex: none; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: #000; color: #fff;
+    font: 700 10px/1 "KB Mono", "Courier New", monospace; letter-spacing: -0.04em; }
+  .fb-badge.fav { background: #fff; color: #000; border: 2px solid #000; }
+
+  /* Left: the matchweek */
+  .fb-main { flex: none; width: 540px; padding: 10px 20px 6px 22px; }
+  .fb-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .fb-title h1 { margin: 0; font-size: 40px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; white-space: nowrap; }
+  .fb-title .span { font: 700 13px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.04em; white-space: nowrap; }
+  .fb-status { display: flex; align-items: center; gap: 10px; margin-top: 7px; font-size: 15px; font-weight: 600; white-space: nowrap; }
+  .fb-tag { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 11px; background: #000; color: #fff;
+    font: 700 12px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.04em; }
+  .fb-list { margin-top: 5px; display: flex; flex-direction: column; }
+  .fb-day { display: flex; align-items: center; gap: 10px; height: 22px; margin-top: 3px; }
+  .fb-day::after { content: ""; order: 1; flex: 1 1 auto; border-top: 2px solid #000; }
+  .fb-day .n { order: 2; font: 400 11px/1 "KB Mono", "Courier New", monospace; white-space: nowrap; }
+  .fb-game { display: grid; grid-template-columns: 72px 1fr 26px 40px 26px 1fr; align-items: center; column-gap: 7px; height: 26px; }
+  .fb-time { font: 700 14px/1 "KB Mono", "Courier New", monospace; white-space: nowrap; letter-spacing: -0.02em; align-self: stretch; display: flex; align-items: center; }
+  .fb-time.rep { border-left: 2px dotted #000; margin-left: 18px; }
+  .fb-time .live { background: #000; color: #fff; padding: 3px 5px; border-radius: 4px; font-size: 12px; }
+  .fb-name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fb-name.h { text-align: right; }
+  .fb-name.fav { font-weight: 800; }
+  .fb-mid { text-align: center; font: 700 13px/1 "KB Mono", "Courier New", monospace; }
+  .fb-mid .sc { display: inline-block; min-width: 42px; padding: 3px 0; border: 2px solid #000; border-radius: 4px; font-size: 14px; }
+  .fb-mid .sc.live { background: #000; color: #fff; }
+  .fb-more { margin-top: 4px; font: 700 12px/1 "KB Mono", "Courier New", monospace; text-align: right; }
+
+  /* Right: the league table, top 5 and bottom 5 */
+  .fb-vrule { border-left: 2px solid #000; }
+  .fb-side { flex: 1 1 auto; padding: 14px 14px 10px 14px; }
+  .fb-side-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .fb-cols, .fb-tr { display: grid; grid-template-columns: 18px 22px 1fr 30px 24px; align-items: center; column-gap: 5px; }
+  .fb-cols { margin-top: 10px; padding-bottom: 4px; border-bottom: 2px solid #000; font: 700 10px/1 "KB Mono", "Courier New", monospace; }
+  .fb-cols span:nth-child(n+4), .fb-tr span:nth-child(n+4) { text-align: right; }
+  .fb-tr { height: 29px; font-size: 14px; font-weight: 600; border-bottom: 1px solid #000; }
+  .fb-tr .pos { font: 700 12px/1 "KB Mono", "Courier New", monospace; text-align: right; }
+  .fb-tr .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fb-tr .pts { font-weight: 800; }
+  .fb-tr.fav .nm { font-weight: 800; }
+  .fb-tr.drop { border-top: 2px dashed #000; }
+  .fb-gap { height: 18px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #000; font: 700 12px/1 "KB Mono", "Courier New", monospace; letter-spacing: 0.4em; }
+  .fb-key { margin-top: auto; font: 400 10px/1.3 "KB Mono", "Courier New", monospace; }
+
+  .fb-empty { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 20px; }
+  .fb-alert { display: inline-flex; align-items: center; background: #000; color: #fff; font-weight: 700; font-size: 12px; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+</style>
+
+{% comment %} A club badge: t is a team ({code, name, fav}), s the size in px. {% endcomment %}
+{% template fb_badge %}<span class="fb-badge{% if t.fav %} fav{% endif %}" style="width: {{ s | default: 24 }}px; height: {{ s | default: 24 }}px{% if s > 30 %}; font-size: {{ s | divided_by: 3 }}px{% endif %}">{{ t.code }}</span>{% endtemplate %}
+
+{% template fb_error %}
+<div class="fb-empty">
+  <svg viewBox="0 0 24 24" width="64" height="64"><path d="M12 1.5 0.8 21.5h22.4zM10.8 8.5h2.4l-.3 7h-1.8zm1.2 8.8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill-rule="evenodd"/></svg>
+  <div style="font-size: 30px; font-weight: 700">No fixtures yet</div>
+  <div style="font-size: 15px; font-weight: 500; max-width: 560px">{% if error %}{{ error | truncate: 140 }}{% else %}Check that the bridges service is running and the Bridge URL is set in this recipe.{% endif %}</div>
+</div>
+{% endtemplate %}
+
+{% comment %} The league table rows: rows, drop_from (first relegation place). {% endcomment %}
+{% template fb_rows %}{% for r in rows %}<div class="fb-tr{% if r.fav %} fav{% endif %}{% if r.pos == drop_from %} drop{% endif %}"><span class="pos">{{ r.pos }}</span>{% render "fb_badge", t: r, s: 22 %}<span class="nm">{{ r.name }}</span><span>{{ r.gd }}</span><span class="pts">{{ r.pts }}</span></div>{% endfor %}{% endtemplate %}

@@ -1,0 +1,44 @@
+---
+name: Premier League
+id: 8b3e6f2a-4c1d-4f9e-a7b5-2d6c0e9f1a43
+strategy: polling
+polling_verb: get
+polling_url: "{{ bridge_url }}/football.json"
+polling_headers: authorization=Bearer {{ bridge_token }}
+polling_body: ''
+refresh_interval: 15
+no_screen_padding: 'no'
+dark_mode: 'no'
+static_data: ''
+framework_version: latest
+custom_fields:
+- keyname: about
+  field_type: author_bio
+  name: About
+  description: The next Premier League matchweek with kickoff times in your time zone and a countdown, live and full-time scores while it's under way, and the top 5 and bottom 5 of the table. Fixtures come from the free Fantasy Premier League feed (no account or key). Needs the bridges service running on your network (see football/README.md).
+- keyname: bridge_url
+  field_type: url
+  name: Bridge URL
+  description: Where the bridges service is running, without a trailing slash. In this repo's Docker setup it's http://football-bridge:8765.
+  placeholder: http://football-bridge:8765
+  default: http://football-bridge:8765
+- keyname: bridge_token
+  field_type: password
+  name: Bridge token
+  description: The FOOTBALL_BRIDGE_TOKEN value from larapaper/.env. Leave empty if you didn't set one.
+  optional: true
+- keyname: page_number
+  field_type: number
+  name: Page dot
+  description: Which header dot is filled for this screen (This Week is 1). Only used if the bridge doesn't send it; normally SCREEN_ORDER in larapaper/.env decides.
+  default: 6
+- keyname: page_count
+  field_type: number
+  name: Total pages
+  description: How many dots the header shows. Only used if the bridge doesn't send it; normally SCREEN_ORDER in larapaper/.env decides.
+  default: 6
+- keyname: font_base
+  field_type: url
+  name: Header font source
+  description: Where the header font is loaded from. The kitchen-board container serves it.
+  default: http://kitchen-board:8080

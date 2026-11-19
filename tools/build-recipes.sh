@@ -14,7 +14,7 @@
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-RECIPES=(polestar dominion strava weather)
+RECIPES=(polestar dominion strava weather football)
 
 python3 - "$ROOT" "${RECIPES[@]}" <<'PY'
 import pathlib, sys

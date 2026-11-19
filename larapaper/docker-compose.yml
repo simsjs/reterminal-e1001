@@ -41,7 +41,7 @@ services:
       - "${LOCAL_BIND:-127.0.0.1}:4568:8080"   # preview, from the Pi only: http://localhost:4568/week
     environment:
       - TZ=${TZ:-America/New_York}
-      - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather}   # page dots, see README
+      - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather,football}   # page dots, see README
       - CALENDAR_ICS_URLS=${CALENDAR_ICS_URLS:-}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
@@ -66,14 +66,16 @@ services:
           - strava-bridge
           - polestar-bridge
           - dominion-bridge
+          - football-bridge
     ports:
       - "${LOCAL_BIND:-127.0.0.1}:4569:8765"   # Polestar car images page, from the Pi only: http://localhost:4569/images?token=<POLESTAR_BRIDGE_TOKEN>
       - "${LOCAL_BIND:-127.0.0.1}:4570:8765"   # home energy raw data, from the Pi only: http://localhost:4570/dominion.json?token=<DOMINION_BRIDGE_TOKEN>
       - "${LOCAL_BIND:-127.0.0.1}:4571:8765"   # fitness raw data, from the Pi only: http://localhost:4571/fitness.json?token=<STRAVA_BRIDGE_TOKEN>
       - "${LOCAL_BIND:-127.0.0.1}:4572:8765"   # weather raw data, from the Pi only: http://localhost:4572/weather.json
+      - "${LOCAL_BIND:-127.0.0.1}:4573:8765"   # Premier League raw data, from the Pi only: http://localhost:4573/football.json
     environment:
       - TZ=${TZ:-America/New_York}
-      - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather}   # page dots, see README
+      - SCREEN_ORDER=${SCREEN_ORDER:-week,polestar,energy,fitness,weather,football}   # page dots, see README
       # dompower (Dominion's login tool) keeps its files in HOME.
       - HOME=/data/dominion
       # Weather screen
@@ -85,6 +87,11 @@ services:
       - WEATHER_ALERTS=${WEATHER_ALERTS:-on}
       - WEATHER_SCENE=${WEATHER_SCENE:-auto}
       - WEATHER_DEMO=${WEATHER_DEMO:-0}
+      # Premier League screen
+      - FOOTBALL_BRIDGE_TOKEN=${FOOTBALL_BRIDGE_TOKEN:-}
+      - FOOTBALL_REFRESH_MINUTES=${FOOTBALL_REFRESH_MINUTES:-15}
+      - FOOTBALL_FAVORITE=${FOOTBALL_FAVORITE:-}
+      - FOOTBALL_DEMO=${FOOTBALL_DEMO:-0}
       # Fitness screen (Strava)
       - STRAVA_BRIDGE_TOKEN=${STRAVA_BRIDGE_TOKEN:-}
       - STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID:-}

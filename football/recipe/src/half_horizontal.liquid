@@ -1,0 +1,20 @@
+<div class="view view--half_horizontal">
+  <div class="layout" style="padding: 0">
+    <div class="fb" style="padding: 10px 20px 6px; flex-direction: column; gap: 4px">
+    {% if ok != true or no_games %}
+      <div class="fb-empty"><div style="font-size: 22px; font-weight: 700">No fixtures</div></div>
+    {% else %}
+      <div class="fb-status" style="margin-top: 0">{% if status.tag != "" %}<span class="fb-tag">{{ status.tag }}</span>{% endif %}<span>{{ status.text }}</span></div>
+      {% for d in days limit: 1 %}{% for g in d.games limit: 4 %}
+      <div class="fb-game">
+        <span class="fb-time">{% if g.state == "ft" %}FT{% elsif g.state == "live" %}{{ g.minute }}{% else %}{{ g.time }}{% endif %}</span>
+        <span class="fb-name h">{{ g.home.name }}</span>{% render "fb_badge", t: g.home, s: 24 %}
+        <span class="fb-mid">{% if g.score != "" %}{{ g.score }}{% else %}v{% endif %}</span>
+        {% render "fb_badge", t: g.away, s: 24 %}<span class="fb-name">{{ g.away.name }}</span>
+      </div>
+      {% endfor %}{% endfor %}
+    {% endif %}
+    </div>
+  </div>
+  <div class="title_bar"><span class="title">Premier League</span><span class="instance">{{ title }}</span></div>
+</div>

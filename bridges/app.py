@@ -1,5 +1,5 @@
 """One service for the screens that need data from outside: weather, fitness
-(Strava), Polestar and home energy (Dominion).
+(Strava), Polestar, home energy (Dominion) and the Premier League.
 
 Each screen lives in its own module and keeps its own routes, token and
 refresh loop; a screen that fails never stops the others. LaraPaper still
@@ -31,11 +31,12 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(
 log = logging.getLogger("bridges")
 
 import dominion  # noqa: E402
+import football  # noqa: E402
 import polestar  # noqa: E402
 import strava  # noqa: E402
 import weather  # noqa: E402
 
-SCREENS = [weather, strava, polestar, dominion]
+SCREENS = [weather, strava, polestar, dominion, football]
 
 
 @asynccontextmanager

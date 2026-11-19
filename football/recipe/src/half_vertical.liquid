@@ -1,0 +1,15 @@
+<div class="view view--half_vertical">
+  <div class="layout" style="padding: 0">
+    <div class="fb fb-col" style="padding: 12px 16px">
+    {% if ok != true or no_games %}
+      <div class="fb-empty"><div style="font-size: 22px; font-weight: 700">No fixtures</div></div>
+    {% else %}
+      <div class="fb-cols" style="margin-top: 0"><span></span><span></span><span>CLUB</span><span>GD</span><span>PTS</span></div>
+      {% render "fb_rows", rows: table.top, drop_from: table.drop_from %}
+      <div class="fb-gap">···</div>
+      {% render "fb_rows", rows: table.bottom, drop_from: table.drop_from %}
+    {% endif %}
+    </div>
+  </div>
+  <div class="title_bar"><span class="title">Premier League</span><span class="instance">Table</span></div>
+</div>

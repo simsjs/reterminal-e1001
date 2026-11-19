@@ -4,8 +4,9 @@ Screens for a Seeed reTerminal E1001 running TRMNL firmware, served by
 [LaraPaper](https://github.com/usetrmnl/larapaper) on a Raspberry Pi: a calendar
 screen (This Week), a Polestar status screen (see [`polestar/`](polestar/README.md)), a
 home energy screen for Dominion Energy (see [`dominion/`](dominion/README.md)), a
-fitness screen from Strava (see [`strava/`](strava/README.md)) and a weather screen
-(see [`weather/`](weather/README.md)).
+fitness screen from Strava (see [`strava/`](strava/README.md)), a weather screen
+(see [`weather/`](weather/README.md)) and a Premier League screen (see
+[`football/`](football/README.md)).
 
 The E1001 refreshes every 15 minutes and shows the next screen each time, in
 this order (the dots in each screen's header follow the same order):
@@ -17,6 +18,7 @@ this order (the dots in each screen's header follow the same order):
 | 3 | **Home energy** | this billing cycle's use and cost, yesterday's half-hour readings, the last 7 days |
 | 4 | **Fitness** | your latest Strava activity and hours per week |
 | 5 | **Weather** | now, the next 5 days, wind, humidity, UV, air quality and sunrise, with a picture of the house that matches the weather |
+| 6 | **Premier League** | the next matchweek's games by day with kickoff times and a countdown, live and full-time scores, and the top 5 and bottom 5 of the table |
 
 From 10:00 PM to 6:00 AM the display sleeps, with no refreshes, to save battery.
 
@@ -33,7 +35,7 @@ From 10:00 PM to 6:00 AM the display sleeps, with no refreshes, to save battery.
   calendar screen (`kitchen-board`) and `bridges`.
 - `bridges/` is one Python service for the screens that need outside data. Each
   screen is its own module there (`weather.py`, `strava.py`, `polestar.py` and
-  `dominion.py`) with its own routes, token and refresh loop; one screen
+  `dominion.py`, `football.py`) with its own routes, token and refresh loop; one screen
   failing doesn't stop the others.
   `http://localhost:4572/health` shows each screen's status. LaraPaper still
   reaches each screen by its old name (`weather-bridge`, `strava-bridge`,
@@ -165,7 +167,7 @@ The dots at the top left of every screen come from one setting in
 `larapaper/.env`, listing the screens in playlist order:
 
 ```
-SCREEN_ORDER=week,polestar,energy,fitness,weather
+SCREEN_ORDER=week,polestar,energy,fitness,weather,football
 ```
 
 Each service works out its own dot and the total from it. After adding,
@@ -182,12 +184,12 @@ zips in LaraPaper again and rebuild the calendar service.
 ## Previews and raw data
 
 Only LaraPaper (port 4567) is open to your home network. The previews and the
-bridges' raw-data pages (ports 4568-4572) answer on the Pi itself. To open them
+bridges' raw-data pages (ports 4568-4573) answer on the Pi itself. To open them
 in a browser on your laptop, tunnel them over SSH and leave that window open:
 
 ```bash
 ssh -L 4568:localhost:4568 -L 4569:localhost:4569 -L 4570:localhost:4570 \
-    -L 4571:localhost:4571 -L 4572:localhost:4572 pi@<pi-ip>
+    -L 4571:localhost:4571 -L 4572:localhost:4572 -L 4573:localhost:4573 pi@<pi-ip>
 ```
 
 Then use these addresses (the bridge pages need the screen's token from
@@ -200,9 +202,10 @@ Then use these addresses (the bridge pages need the screen's token from
 | `http://localhost:4570/dominion.json` | home energy raw data (`/raw.json` is Dominion's untouched answer) |
 | `http://localhost:4571/fitness.json` | fitness raw data |
 | `http://localhost:4572/weather.json` | weather raw data |
-| `http://localhost:4572/health` | the status of all four bridge screens (no token needed) |
+| `http://localhost:4573/football.json` | Premier League raw data |
+| `http://localhost:4572/health` | the status of all five bridge screens (no token needed) |
 
-Ports 4569–4572 all reach the same `bridges` service; each keeps its own port
+Ports 4569–4573 all reach the same `bridges` service; each keeps its own port
 so old bookmarks still work. To open the ports to the whole network again, set
 `LOCAL_BIND=0.0.0.0` in `larapaper/.env` and run `docker compose up -d`.
 

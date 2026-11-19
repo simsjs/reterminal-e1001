@@ -1,0 +1,62 @@
+<div class="view view--full">
+  <div class="fbx">
+  {% render "screen_header", title: "PREMIER LEAGUE", device: trmnl.device, cfv: trmnl.plugin_settings.custom_fields_values, pn: page_number, pc: page_count, as_of: as_of %}
+  <div class="fbx-body">
+    <div class="fb">
+    {% if ok != true %}
+      {% render "fb_error", error: error %}
+    {% elsif no_games %}
+      <div class="fb-empty"><div style="font-size: 30px; font-weight: 700">No Premier League games scheduled</div><div style="font-size: 15px">The season is over, or the next fixtures aren't out yet.</div></div>
+    {% else %}
+
+      <!-- ── Left: the matchweek, grouped by day with kickoff times ─────── -->
+      <div class="fb-col fb-main">
+        <div class="fb-title">
+          <h1>{{ title }}</h1>
+          <span class="span">{{ span | upcase }}</span>
+        </div>
+        <div class="fb-status">
+          {% if warning %}<span class="fb-alert">Offline</span>{% elsif status.tag != "" %}<span class="fb-tag">{{ status.tag }}</span>{% endif %}
+          <span>{{ status.text }}</span>
+        </div>
+        <div class="fb-list">
+          {% for d in days %}
+          <div class="fb-day"><span class="fb-label">{{ d.label }} · {{ d.date }}</span><span class="n">{{ d.count }} game{% if d.count != 1 %}s{% endif %}</span></div>
+          {% for g in d.games %}
+          <div class="fb-game">
+            {% if g.state == "ft" %}<span class="fb-time">FT</span>
+            {% elsif g.state == "live" %}<span class="fb-time"><span class="live">{{ g.minute }}</span></span>
+            {% elsif g.repeat %}<span class="fb-time rep"></span>
+            {% else %}<span class="fb-time">{{ g.time }}</span>{% endif %}
+            <span class="fb-name h{% if g.home.fav %} fav{% endif %}">{{ g.home.name }}</span>
+            {% render "fb_badge", t: g.home, s: 26 %}
+            <span class="fb-mid">{% if g.score != "" %}<span class="sc{% if g.state == 'live' %} live{% endif %}">{{ g.score }}</span>{% else %}v{% endif %}</span>
+            {% render "fb_badge", t: g.away, s: 26 %}
+            <span class="fb-name{% if g.away.fav %} fav{% endif %}">{{ g.away.name }}</span>
+          </div>
+          {% endfor %}
+          {% endfor %}
+          {% if more > 0 %}<div class="fb-more">+{{ more }} more</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="fb-vrule"></div>
+
+      <!-- ── Right: the table, top 5 and bottom 5 ────────────────────────── -->
+      <div class="fb-col fb-side">
+        <div class="fb-side-head">
+          <span class="fb-label" style="font-size: 13px">Table</span>
+          <span class="fb-mono" style="font-size: 10px">{{ table.top[0].p }} PLAYED</span>
+        </div>
+        <div class="fb-cols"><span></span><span></span><span>CLUB</span><span>GD</span><span>PTS</span></div>
+        {% render "fb_rows", rows: table.top, drop_from: table.drop_from %}
+        {% if table.count > 10 %}<div class="fb-gap">···</div>{% endif %}
+        {% render "fb_rows", rows: table.bottom, drop_from: table.drop_from %}
+        <div class="fb-key">- - - relegation zone</div>
+      </div>
+
+    {% endif %}
+    </div>
+  </div>
+  </div>
+</div>
