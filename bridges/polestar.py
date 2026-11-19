@@ -535,7 +535,7 @@ def _display_names(cars: list[CarSnapshot]) -> dict[str, str]:
 
 
 # Polestar sometimes reports a nonsense average consumption (seen: ~0.9 kWh/100 km,
-# which would read "69 mi/kWh"). Real EVs land around 10-40 kWh/100 km. Outside
+# which would read "1.4 kWh/100 mi"). Real EVs land around 10-40 kWh/100 km. Outside
 # this range the screen shows the car's last sensible value, or "Pending" until one
 # arrives. The last values are kept in memory, so a bridge restart clears them.
 SANE_CONSUMPTION_KWH_100KM = (8.0, 60.0)
@@ -582,7 +582,7 @@ def format_car(c: CarSnapshot, name: str, imperial: bool, now: datetime) -> dict
     consumption, source = _sane_consumption(c)
     if consumption:
         efficiency = (
-            _num(100 / (consumption * KM_PER_MI), 1)  # mi/kWh
+            _num(consumption * KM_PER_MI, 1)  # kWh/100 mi, as the Polestar app shows it
             if imperial
             else _num(consumption, 1)  # kWh/100 km
         )
@@ -845,7 +845,7 @@ async def polestar(request: Request, units: str = "imperial") -> JSONResponse:
         "refresh_error": state.error,
         "demo": DEMO,
         "dist_unit": "mi" if imperial else "km",
-        "eff_unit": "mi/kWh" if imperial else "kWh/100 km",
+        "eff_unit": "kWh/100 mi" if imperial else "kWh/100 km",
         "updated": _clock(state.last_success, now) if state.last_success else None,
         "car_count": len(cars),
         "cars": cars,
