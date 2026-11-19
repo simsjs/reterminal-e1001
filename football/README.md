@@ -8,7 +8,7 @@ A full-screen LaraPaper recipe for the E1001 built around the next Premier Leagu
 
 **Right, the table.** As many rows as fit: the bottom 4 always, then the table from 1st down (1st–11th by default), with **···** where teams are skipped. Each row has goal difference and points, and a dashed line marks the relegation places. The table is worked out from every finished game this season (points, then goal difference, then goals scored).
 
-**Crests.** Each club shows a plain round badge with its 3-letter code, unless you've put a picture of its crest in `football/images/` on the Pi. The bridge turns those into black and white at the right size. See [`images/README.md`](images/README.md).
+**Crests.** Each club shows a plain round badge with its 3-letter code, unless you've put a picture of its crest in `football/images/` on the Pi. The bridge turns those into black and white at the right size. A `lion.png` there puts the league logo in front of the **Matchweek** title. See [`images/README.md`](images/README.md).
 
 | While games are on |
 | --- |

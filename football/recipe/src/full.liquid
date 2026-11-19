@@ -12,7 +12,7 @@
       <!-- ── Left: the matchweek, grouped by day with kickoff times ─────── -->
       <div class="fb-col fb-main">
         <div class="fb-title">
-          <h1>{{ title }}</h1>
+          <h1>{% if lion %}<img class="fb-lion" src="{{ lion.src }}" width="{{ lion.w }}" height="{{ lion.h }}" alt="">{% endif %}{{ title }}</h1>
           <span class="span">{{ span | upcase }}</span>
         </div>
         <div class="fb-status">

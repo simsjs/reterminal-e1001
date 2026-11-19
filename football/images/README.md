@@ -6,6 +6,7 @@ Put one picture per club here, named after the club's 3-letter code: `ARS.png`, 
 - The bridge trims each picture and turns it into pure black and white: 26 px in the fixture list and 22 px in the table. Colors darker than mid-gray go black and lighter ones go white.
 - Simple, high-contrast pictures read best at this size. If a club's light color (sky blue, yellow) disappears, either use a black-and-white version of that picture or raise `FOOTBALL_CREST_THRESHOLD` in `larapaper/.env` (default 150; try 190).
 - A club without a picture keeps the plain round badge with its code.
+- `lion.png` (optional) is the league logo shown left of the **Matchweek** title, at the height of its capitals (30 px; `FOOTBALL_LION_HEIGHT` in `larapaper/.env`). Without it the title is text only.
 
 The codes come from the fixtures feed and change only when clubs are promoted or relegated. `http://localhost:4572/health` lists, under `football`, the codes that don't have a picture yet.
 

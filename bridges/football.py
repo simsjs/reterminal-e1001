@@ -24,6 +24,8 @@ Environment:
     FOOTBALL_CRESTS_DIR        folder of your own crest pictures, default /app/images/football
                                (football/images on the Pi, out of git). Name each file after the
                                club's code, e.g. ARS.png; clubs without one get a plain badge.
+    FOOTBALL_LION_HEIGHT       px, default 30: the league logo (lion.png in the crests folder),
+                               shown left of the title at the height of its capitals
     FOOTBALL_CREST_THRESHOLD   0-255, default 150: colors darker than this turn black in crests
     FOOTBALL_DEMO              "1" to serve made-up data (this weekend's dates) without the API
     TZ                         IANA time zone, default America/New_York
@@ -143,6 +145,44 @@ def crest(code: str) -> dict[str, str]:
     return out
 
 
+LION_H = int(setting("FOOTBALL", "LION_HEIGHT", "30") or 30)  # px, the height of the title's capitals
+_lion_cache: tuple[float, dict[str, Any] | None] | None = None
+
+
+def lion() -> dict[str, Any] | None:
+    """The league logo for the title (lion.png in the crests folder), LION_H px tall, or None."""
+    global _lion_cache
+    path = _crest_file("lion")
+    if not path:
+        _lion_cache = None
+        return None
+    mtime = path.stat().st_mtime
+    if _lion_cache and _lion_cache[0] == mtime:
+        return _lion_cache[1]
+    out = None
+    try:
+        from PIL import Image
+
+        im = Image.open(path).convert("RGBA")
+        flat = Image.new("RGBA", im.size, (255, 255, 255, 255))
+        flat.alpha_composite(im)
+        gray = flat.convert("L")
+        bbox = gray.point(lambda v: 255 if v < 245 else 0).getbbox()
+        if bbox:
+            gray = gray.crop(bbox)
+        w = max(1, round(gray.width * LION_H / gray.height))
+        gray = gray.resize((w, LION_H), Image.Resampling.BOX)
+        bw = gray.point(lambda v: 255 if v > CREST_THRESHOLD else 0).convert("1")
+        buf = io.BytesIO()
+        bw.save(buf, format="PNG", optimize=True)
+        out = {"src": "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode(), "w": w, "h": LION_H}
+        log.info("Loaded league logo %s", path.name)
+    except Exception as err:
+        log.warning("Could not load league logo %s: %s", path, err)
+    _lion_cache = (mtime, out)
+    return out
+
+
 def _team(t: dict[str, Any]) -> dict[str, Any]:
     code = t["code"]
     return {"code": code, "name": t["name"], "fav": bool(FAVORITE) and code == FAVORITE, **crest(code)}
@@ -161,7 +201,7 @@ def pick_matchweek(fixtures: list[dict[str, Any]]) -> tuple[int | None, list[dic
 
 
 def build_panel(event: int | None, games: list[dict[str, Any]], teams: dict[int, dict[str, Any]], now: datetime) -> dict[str, Any]:
-    panel: dict[str, Any] = {"ok": True, "as_of": _clock(now), "demo": DEMO}
+    panel: dict[str, Any] = {"ok": True, "as_of": _clock(now), "demo": DEMO, "lion": lion()}
     if not games:
         panel.update(no_games=True, title="Premier League")
         return panel
@@ -348,7 +388,7 @@ def start() -> list:
 
 
 def health() -> dict[str, Any]:
-    codes = sorted(t["code"] for t in source._teams.values()) if source._teams else []
+    codes = [c for c in sorted(t["code"] for t in source._teams.values()) if c.upper() != "LION"] if source._teams else []
     return {
         "ok": source.error is None and source.panel is not None,
         "demo": DEMO,
