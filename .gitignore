@@ -16,3 +16,7 @@ dominion/images/*
 # The house pictures for the weather screen stay on the Pi, out of git.
 weather/images/*
 !weather/images/README.md
+
+# Club crest pictures for the Premier League screen stay on the Pi, out of git.
+football/images/*
+!football/images/README.md

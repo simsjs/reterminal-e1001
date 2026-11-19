@@ -91,6 +91,8 @@ services:
       - FOOTBALL_BRIDGE_TOKEN=${FOOTBALL_BRIDGE_TOKEN:-}
       - FOOTBALL_REFRESH_MINUTES=${FOOTBALL_REFRESH_MINUTES:-15}
       - FOOTBALL_FAVORITE=${FOOTBALL_FAVORITE:-}
+      - FOOTBALL_TABLE_ROWS=${FOOTBALL_TABLE_ROWS:-15}
+      - FOOTBALL_CREST_THRESHOLD=${FOOTBALL_CREST_THRESHOLD:-150}
       - FOOTBALL_DEMO=${FOOTBALL_DEMO:-0}
       # Fitness screen (Strava)
       - STRAVA_BRIDGE_TOKEN=${STRAVA_BRIDGE_TOKEN:-}
@@ -129,6 +131,8 @@ services:
       # Dominion tokens and login cookies from the one-time `dompower login` (see dominion/README.md).
       - dominion:/data/dominion
       - ../dominion/images:/app/images/dominion:ro
+      # Your own club crest pictures for the Premier League screen (not in git).
+      - ../football/images:/app/images/football:ro
 
 volumes:
   database:

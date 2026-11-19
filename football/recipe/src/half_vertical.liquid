@@ -6,7 +6,7 @@
     {% else %}
       <div class="fb-cols" style="margin-top: 0"><span></span><span></span><span>CLUB</span><span>GD</span><span>PTS</span></div>
       {% render "fb_rows", rows: table.top, drop_from: table.drop_from %}
-      <div class="fb-gap">···</div>
+      {% if table.gap %}<div class="fb-gap">···</div>{% endif %}
       {% render "fb_rows", rows: table.bottom, drop_from: table.drop_from %}
     {% endif %}
     </div>

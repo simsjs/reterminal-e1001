@@ -6,9 +6,9 @@ A full-screen LaraPaper recipe for the E1001 built around the next Premier Leagu
 
 **Left, the matchweek.** **Matchweek 12** (or whichever is next) as the title, the dates it covers, and a countdown to the next kickoff. Under that, every game grouped by day with its kickoff time in Eastern time. When several games kick off together, the time is printed once and a dotted line runs down the rest of them.
 
-**Right, the table.** The top 5 and bottom 5, with goal difference and points. A dashed line marks the relegation places. The table is worked out from every finished game this season (points, then goal difference, then goals scored).
+**Right, the table.** As many rows as fit: the bottom 4 always, then the table from 1st down (1st–11th by default), with **···** where teams are skipped. Each row has goal difference and points, and a dashed line marks the relegation places. The table is worked out from every finished game this season (points, then goal difference, then goals scored).
 
-Each club gets a plain round badge with its 3-letter code.
+**Crests.** Each club shows a plain round badge with its 3-letter code, unless you've put a picture of its crest in `football/images/` on the Pi. The bridge turns those into black and white at the right size. See [`images/README.md`](images/README.md).
 
 | While games are on |
 | --- |
@@ -57,6 +57,8 @@ The screen is one part of the `bridges` service (`bridges/football.py`, which La
 | Variable | Default | |
 | --- | --- | --- |
 | `FOOTBALL_FAVORITE` | (none) | Your club's 3-letter code, shown in bold |
+| `FOOTBALL_TABLE_ROWS` | 15 | Table rows: the bottom 4 always, the rest from 1st down |
+| `FOOTBALL_CREST_THRESHOLD` | 150 | Crest pictures: colors darker than this (0–255) turn black |
 | `FOOTBALL_REFRESH_MINUTES` | 15 | How often the bridge checks for fixtures and scores (minimum 5) |
 | `FOOTBALL_BRIDGE_TOKEN` | (none) | Token LaraPaper must send |
 | `FOOTBALL_DEMO` | 0 | `1` shows made-up data |

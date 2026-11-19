@@ -46,13 +46,12 @@
       <div class="fb-col fb-side">
         <div class="fb-side-head">
           <span class="fb-label" style="font-size: 13px">Table</span>
-          <span class="fb-mono" style="font-size: 10px">{{ table.top[0].p }} PLAYED</span>
+          <span class="fb-mono" style="font-size: 10px">{{ table.played }} PLAYED · - - DROP</span>
         </div>
         <div class="fb-cols"><span></span><span></span><span>CLUB</span><span>GD</span><span>PTS</span></div>
         {% render "fb_rows", rows: table.top, drop_from: table.drop_from %}
-        {% if table.count > 10 %}<div class="fb-gap">···</div>{% endif %}
+        {% if table.gap %}<div class="fb-gap">···</div>{% endif %}
         {% render "fb_rows", rows: table.bottom, drop_from: table.drop_from %}
-        <div class="fb-key">- - - relegation zone</div>
       </div>
 
     {% endif %}

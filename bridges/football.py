@@ -19,16 +19,25 @@ Environment:
     FOOTBALL_BRIDGE_TOKEN      shared secret LaraPaper must send (optional; fixtures aren't private)
     FOOTBALL_REFRESH_MINUTES   background refresh interval, default 15 (minimum 5)
     FOOTBALL_FAVORITE          a club's 3-letter code (e.g. ARS); its games are marked with a star
+    FOOTBALL_TABLE_ROWS        how many table rows the screen shows, default 15: the bottom 4
+                               always, the rest from 1st down, with "···" for the teams skipped
+    FOOTBALL_CRESTS_DIR        folder of your own crest pictures, default /app/images/football
+                               (football/images on the Pi, out of git). Name each file after the
+                               club's code, e.g. ARS.png; clubs without one get a plain badge.
+    FOOTBALL_CREST_THRESHOLD   0-255, default 150: colors darker than this turn black in crests
     FOOTBALL_DEMO              "1" to serve made-up data (this weekend's dates) without the API
     TZ                         IANA time zone, default America/New_York
 """
 
 from __future__ import annotations
 
+import base64
+import io
 import logging
 import os
 import random
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -46,6 +55,9 @@ BRIDGE_TOKEN = setting("FOOTBALL", "BRIDGE_TOKEN")
 REFRESH_MINUTES = max(5, int(setting("FOOTBALL", "REFRESH_MINUTES", "15") or 15))
 FAVORITE = setting("FOOTBALL", "FAVORITE").strip().upper()
 DEMO = flag("FOOTBALL", "DEMO")
+TABLE_ROWS = max(8, int(setting("FOOTBALL", "TABLE_ROWS", "15") or 15))
+CRESTS_DIR = Path(setting("FOOTBALL", "CRESTS_DIR", "/app/images/football"))
+CREST_L, CREST_S = 26, 22  # px: fixture list, table
 
 API = "https://fantasy.premierleague.com/api"
 MAX_ROWS = 10  # what fits in the fixture list; more (a rare double matchweek) shows "+N more"
@@ -69,9 +81,71 @@ def _countdown(delta: timedelta) -> str:
     return f"in {m} min"
 
 
+# ── Crests: your own pictures, one per club, turned into 1-bit e-ink images ──
+_crest_cache: dict[str, tuple[float, dict[str, str]]] = {}
+CREST_EXTS = (".png", ".webp", ".jpg", ".jpeg", ".gif", ".bmp")
+
+
+def _crest_file(code: str) -> Path | None:
+    if not CRESTS_DIR.is_dir():
+        return None
+    for f in CRESTS_DIR.iterdir():
+        if f.stem.upper() == code.upper() and f.suffix.lower() in CREST_EXTS and f.is_file():
+            return f
+    return None
+
+
+def _eink_crest(path: Path, size: int) -> str:
+    """Trim the picture, fit it in a size x size square and make it pure black and white.
+
+    A hard threshold rather than dithering: at 22-26 px a dot pattern turns a crest into
+    noise, while solid shapes keep its outline. Colors darker than mid-gray go black."""
+    from PIL import Image, ImageOps
+
+    im = ImageOps.exif_transpose(Image.open(path)).convert("RGBA")
+    flat = Image.new("RGBA", im.size, (255, 255, 255, 255))
+    flat.alpha_composite(im)
+    gray = flat.convert("L")
+    bbox = gray.point(lambda v: 255 if v < 245 else 0).getbbox()
+    if bbox:
+        gray = gray.crop(bbox)
+    scale = min(size / gray.width, size / gray.height)
+    gray = gray.resize((max(1, round(gray.width * scale)), max(1, round(gray.height * scale))), Image.Resampling.LANCZOS)
+    canvas = Image.new("L", (size, size), 255)
+    canvas.paste(gray, ((size - gray.width) // 2, (size - gray.height) // 2))
+    bw = canvas.point(lambda v: 255 if v > CREST_THRESHOLD else 0).convert("1")
+    buf = io.BytesIO()
+    bw.save(buf, format="PNG", optimize=True)
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
+CREST_THRESHOLD = int(setting("FOOTBALL", "CREST_THRESHOLD", "150") or 150)
+
+
+def crest(code: str) -> dict[str, str]:
+    """{"crest": 26 px image, "crest_s": 22 px image} for a club, or {} without a picture.
+    Converted once, and again only when the file changes."""
+    path = _crest_file(code)
+    if not path:
+        _crest_cache.pop(code, None)
+        return {}
+    mtime = path.stat().st_mtime
+    hit = _crest_cache.get(code)
+    if hit and hit[0] == mtime:
+        return hit[1]
+    try:
+        out = {"crest": _eink_crest(path, CREST_L), "crest_s": _eink_crest(path, CREST_S)}
+        log.info("Loaded crest %s", path.name)
+    except Exception as err:
+        log.warning("Could not load crest %s: %s", path, err)
+        out = {}
+    _crest_cache[code] = (mtime, out)
+    return out
+
+
 def _team(t: dict[str, Any]) -> dict[str, Any]:
     code = t["code"]
-    return {"code": code, "name": t["name"], "fav": bool(FAVORITE) and code == FAVORITE}
+    return {"code": code, "name": t["name"], "fav": bool(FAVORITE) and code == FAVORITE, **crest(code)}
 
 
 # ── Building the panel ──
@@ -178,8 +252,14 @@ def build_table(fixtures: list[dict[str, Any]], teams: dict[int, dict[str, Any]]
         gd = r["gf"] - r["ga"]
         rows.append({"pos": pos, **_team(teams[tid]), "p": r["p"], "gd": f"+{gd}" if gd > 0 else str(gd).replace("-", "−"),
                      "pts": 3 * r["w"] + r["d"]})
+    # The bottom 4 always, then as many as fit from 1st down; "···" marks the teams skipped.
     n = len(rows)
-    return {"top": rows[:5], "bottom": rows[-5:] if n > 10 else rows[5:], "drop_from": n - 2, "count": n}
+    bottom_n = min(4, n)
+    top_n = max(0, min(TABLE_ROWS, n) - bottom_n)
+    gap = top_n + bottom_n < n
+    top, bottom = (rows[:top_n], rows[n - bottom_n:]) if gap else (rows, [])
+    played = max((r["p"] for r in rows), default=0)
+    return {"top": top, "bottom": bottom, "gap": gap, "drop_from": n - 2, "count": n, "played": played}
 
 
 # ── Demo data: one matchweek, dated this coming weekend ──
@@ -236,6 +316,7 @@ class Source:
         now = datetime.now(TZ)
         if DEMO:
             event, games, teams, history = _demo(now)
+            self._teams = teams
             self.panel = {**build_panel(event, games, teams, now), "table": build_table(history, teams)}
             self.error, self.last_ok = None, now
             return
@@ -267,9 +348,11 @@ def start() -> list:
 
 
 def health() -> dict[str, Any]:
+    codes = sorted(t["code"] for t in source._teams.values()) if source._teams else []
     return {
         "ok": source.error is None and source.panel is not None,
         "demo": DEMO,
+        "crests_missing": [c for c in codes if not _crest_file(c)],
         "last_ok": source.last_ok.isoformat() if source.last_ok else None,
         "error": source.error,
     }
