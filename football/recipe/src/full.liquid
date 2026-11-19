@@ -13,11 +13,11 @@
       <div class="fb-col fb-main">
         <div class="fb-title">
           <h1>{% if lion %}<img class="fb-lion" src="{{ lion.src }}" width="{{ lion.w }}" height="{{ lion.h }}" alt="">{% endif %}{{ title }}</h1>
-          <span class="span">{{ span | upcase }}</span>
         </div>
         <div class="fb-status">
           {% if warning %}<span class="fb-alert">Offline</span>{% elsif status.tag != "" %}<span class="fb-tag">{{ status.tag }}</span>{% endif %}
-          <span>{{ status.text }}</span>
+          <span class="txt">{{ status.text }}</span>
+          <span class="span">{{ span | upcase }}</span>
         </div>
         <div class="fb-list">
           {% for d in days %}

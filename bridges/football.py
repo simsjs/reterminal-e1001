@@ -24,8 +24,10 @@ Environment:
     FOOTBALL_CRESTS_DIR        folder of your own crest pictures, default /app/images/football
                                (football/images on the Pi, out of git). Name each file after the
                                club's code, e.g. ARS.png; clubs without one get a plain badge.
-    FOOTBALL_LION_HEIGHT       px, default 30: the league logo (lion.png in the crests folder),
-                               shown left of the title at the height of its capitals
+    FOOTBALL_WORDMARK_HEIGHT   px, default 40: lion_w_text.png in the crests folder (the lion with
+                               "Premier League"), shown left of the title at its full height
+    FOOTBALL_LION_HEIGHT       px, default 30: lion.png, used when there's no lion_w_text.png,
+                               at the height of the title's capitals
     FOOTBALL_CREST_THRESHOLD   0-255, default 150: colors darker than this turn black in crests
     FOOTBALL_DEMO              "1" to serve made-up data (this weekend's dates) without the API
     TZ                         IANA time zone, default America/New_York
@@ -71,16 +73,17 @@ def _clock(t: datetime) -> str:
 
 
 def _countdown(delta: timedelta) -> str:
+    """Compact, for the black tag: "in 1d 17h", "in 3h 20m", "in 45m"."""
     mins = int(delta.total_seconds() // 60)
     if mins <= 0:
         return "Kicking off"
     d, rem = divmod(mins, 24 * 60)
     h, m = divmod(rem, 60)
     if d:
-        return f"in {d} day{'s' if d != 1 else ''} {h} hr" if h else f"in {d} day{'s' if d != 1 else ''}"
+        return f"in {d}d {h}h"
     if h:
-        return f"in {h} hr {m} min" if m else f"in {h} hr"
-    return f"in {m} min"
+        return f"in {h}h {m}m" if m else f"in {h}h"
+    return f"in {m}m"
 
 
 # ── Crests: your own pictures, one per club, turned into 1-bit e-ink images ──
@@ -145,20 +148,24 @@ def crest(code: str) -> dict[str, str]:
     return out
 
 
-LION_H = int(setting("FOOTBALL", "LION_HEIGHT", "30") or 30)  # px, the height of the title's capitals
-_lion_cache: tuple[float, dict[str, Any] | None] | None = None
+# The league logo left of the title, from the crests folder: lion_w_text.png (the lion with
+# "Premier League") as tall as the whole title, or else lion.png as tall as its capitals.
+LOGOS = [("lion_w_text", int(setting("FOOTBALL", "WORDMARK_HEIGHT", "40") or 40)),
+         ("lion", int(setting("FOOTBALL", "LION_HEIGHT", "30") or 30))]
+_lion_cache: tuple[str, float, dict[str, Any] | None] | None = None
 
 
 def lion() -> dict[str, Any] | None:
-    """The league logo for the title (lion.png in the crests folder), LION_H px tall, or None."""
+    """The league logo for the title, or None without a picture."""
     global _lion_cache
-    path = _crest_file("lion")
-    if not path:
+    found = next(((f, h) for f, h in ((_crest_file(n), h) for n, h in LOGOS) if f), None)
+    if not found:
         _lion_cache = None
         return None
+    path, LION_H = found
     mtime = path.stat().st_mtime
-    if _lion_cache and _lion_cache[0] == mtime:
-        return _lion_cache[1]
+    if _lion_cache and _lion_cache[0] == str(path) and _lion_cache[1] == mtime:
+        return _lion_cache[2]
     out = None
     try:
         from PIL import Image
@@ -179,7 +186,7 @@ def lion() -> dict[str, Any] | None:
         log.info("Loaded league logo %s", path.name)
     except Exception as err:
         log.warning("Could not load league logo %s: %s", path, err)
-    _lion_cache = (mtime, out)
+    _lion_cache = (str(path), mtime, out)
     return out
 
 
@@ -243,9 +250,8 @@ def build_panel(event: int | None, games: list[dict[str, Any]], teams: dict[int,
         status = {"tag": "LIVE", "text": f"{len(live)} game{'s' if len(live) != 1 else ''} in play"}
     elif upcoming:
         first = upcoming[0]
-        n = sum(1 for r in upcoming if r["ko"] == first["ko"])
         status = {"tag": _countdown(first["ko"] - now).upper(),
-                  "text": f"Next kickoff {first['ko']:%a} {_clock(first['ko'])}" + (f" · {n} games" if n > 1 else "")}
+                  "text": f"Next kickoff {first['ko']:%a} {_clock(first['ko'])}"}
     else:
         status = {"tag": "", "text": "All games played"}
 
@@ -388,7 +394,7 @@ def start() -> list:
 
 
 def health() -> dict[str, Any]:
-    codes = [c for c in sorted(t["code"] for t in source._teams.values()) if c.upper() != "LION"] if source._teams else []
+    codes = [c for c in sorted(t["code"] for t in source._teams.values()) if c.upper() not in ("LION", "LION_W_TEXT")] if source._teams else []
     return {
         "ok": source.error is None and source.panel is not None,
         "demo": DEMO,
