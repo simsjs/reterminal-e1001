@@ -52,7 +52,7 @@ import logging
 import math
 import os
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -157,7 +157,47 @@ def _pct(x: float) -> float:
 
 
 # ── The panel ──
-def build_panel(cycle: Cycle | None, readings: list[Reading], now: datetime) -> dict[str, Any]:
+MIN_CYCLE_DAYS = 20  # anything shorter is a bad end date, not a real billing cycle
+
+
+def _parse_any_date(value: Any) -> date | None:
+    """Dominion sends dates as "MM/DD/YYYY HH:MM:SS" (sometimes ISO)."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    v = value.strip()
+    for text, fmt in ((v, "%m/%d/%Y %H:%M:%S"), (v.split()[0], "%m/%d/%Y"), (v[:10], "%Y-%m-%d")):
+        with contextlib.suppress(ValueError):
+            return datetime.strptime(text, fmt).date()
+    return None
+
+
+def fix_cycle_end(cycle: Cycle, raw: dict[str, Any] | None) -> tuple[Cycle, bool]:
+    """Make sure the cycle has a believable end date.
+
+    dompower fills a missing end date with *today*, which turns a fresh cycle into
+    "day 3 of 3" and wrecks the projection. If the end is missing or too close to the
+    start, look for another end date in Dominion's raw response, else assume the cycle
+    runs as long as the last bill did. Returns (cycle, end_is_estimated).
+    """
+    if (cycle.end - cycle.start).days + 1 >= MIN_CYCLE_DAYS:
+        return cycle, False
+    data = (raw or {}).get("data", {}) if isinstance(raw, dict) else {}
+    for key in ("billperdeddate", "billPerdEdDate", "billPeriodEndDate", "nextReadDate", "nextMeterReadDate", "nextBillDate"):
+        d = _parse_any_date(data.get(key))
+        if d and (d - cycle.start).days + 1 >= MIN_CYCLE_DAYS:
+            log.info("Cycle end from raw field %s: %s", key, d)
+            return replace(cycle, end=d), False
+    length = 30
+    if cycle.last_start and cycle.last_end and (cycle.last_end - cycle.last_start).days + 1 >= MIN_CYCLE_DAYS:
+        length = (cycle.last_end - cycle.last_start).days + 1
+    end = cycle.start + timedelta(days=length - 1)
+    log.info("Dominion sent no usable cycle end (got %s); estimating %s", cycle.end, end)
+    return replace(cycle, end=end), True
+
+
+def build_panel(
+    cycle: Cycle | None, readings: list[Reading], now: datetime, end_estimated: bool = False
+) -> dict[str, Any]:
     """Turn a billing cycle plus 30-minute readings into what the screen shows."""
     by_day: dict[date, list[Reading]] = {}
     for r in readings:
@@ -170,6 +210,7 @@ def build_panel(cycle: Cycle | None, readings: list[Reading], now: datetime) -> 
         panel["logo"] = LOGO
 
     latest = full_days[-1] if full_days else None
+    avg = None
     if latest:
         rs = sorted(by_day[latest], key=lambda r: r.timestamp)
         total = sum(r.consumption for r in rs)
@@ -223,10 +264,16 @@ def build_panel(cycle: Cycle | None, readings: list[Reading], now: datetime) -> 
     if cycle:
         days = (cycle.end - cycle.start).days + 1
         today_n = min(days, max(1, (now.date() - cycle.start).days + 1))
-        # Project from the days the meter has actually reported, not from today.
+        # Project from the days the meter has actually reported, not from today:
+        # kWh so far, plus the recent daily average for each day still to come. Early in a
+        # cycle that is far steadier than stretching one or two days across the month.
         reported_through = min(latest or now.date(), cycle.end)
         elapsed = max(1, (reported_through - cycle.start).days + 1)
-        pace = cycle.usage_kwh / elapsed * days
+        remaining = max(0, days - elapsed)
+        if avg is not None:
+            pace = cycle.usage_kwh + avg * remaining
+        else:
+            pace = cycle.usage_kwh / elapsed * days
         rate = cycle.last_charges / cycle.last_usage if cycle.last_usage > 0 else None
 
         span = max(pace, cycle.last_usage, cycle.usage_kwh, 1) * 1.08
@@ -236,7 +283,7 @@ def build_panel(cycle: Cycle | None, readings: list[Reading], now: datetime) -> 
             "day": today_n,
             "days": days,
             "days_left": max(0, (cycle.end - now.date()).days),
-            "range": f"{_short_date(cycle.start)} – {_short_date(cycle.end)}",
+            "range": f"{_short_date(cycle.start)} – {'~' if end_estimated else ''}{_short_date(cycle.end)}",
             "ends": _short_date(cycle.end),
             "pace_kwh": f"{pace:,.0f}",
             "pct_used": _pct(cycle.usage_kwh / span * 100),
@@ -406,7 +453,7 @@ class Source:
                 account, meter, now.date() - timedelta(days=HISTORY_DAYS), now.date()
             )
 
-        cycle = Cycle(
+        cycle, end_estimated = fix_cycle_end(Cycle(
             start=fc.current_period_start,
             end=fc.current_period_end,
             usage_kwh=fc.current_usage_kwh,
@@ -415,9 +462,9 @@ class Source:
             last_start=fc.last_bill.period_start,
             last_end=fc.last_bill.period_end,
             is_tou=fc.is_tou,
-        )
+        ), self.raw)
         readings = [Reading(u.timestamp, u.consumption, u.generation) for u in usage]
-        self.panel, self.error, self.last_ok = build_panel(cycle, readings, now), None, now
+        self.panel, self.error, self.last_ok = build_panel(cycle, readings, now, end_estimated), None, now
         log.info("Refreshed: %s kWh this cycle, %d readings", cycle.usage_kwh, len(readings))
 
 
