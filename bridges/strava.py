@@ -374,15 +374,11 @@ def build_last(a: dict[str, Any], detail: dict[str, Any], streams: dict[str, lis
             extras.append({"t": f"Max HR {hr_max:.0f}"})
         if a.get("suffer_score"):
             extras.append({"t": f"Rel. effort {a['suffer_score']:.0f}"})
-        cutoff = datetime.now(TZ) - timedelta(days=30)
-        month = [x for x in recent if _local(x) >= cutoff and category(x) == "strength"]
-        lifts = sum(1 for x in month if x.get("sport_type") == "WeightTraining")
-        others = len(month) - lifts
-        if month:
-            parts = [f"{lifts} lift{'s' if lifts != 1 else ''}"] if lifts else []
-            if others:
-                parts.append(f"{others} ruck{'s' if others != 1 else ''}")
-            extras.append({"t": "Last 30 days: ", "v": " · ".join(parts)})
+        # The last five rides, runs and strength sessions as icons, newest on the left.
+        last5 = [category(x) for x in sorted(recent, key=lambda x: x.get("start_date_local") or "", reverse=True)]
+        last5 = [c for c in last5 if c in ("cycling", "running", "strength")][:5]
+        if last5:
+            extras.append({"t": "Last 5 act.:", "icons": last5})
         if streams.get("heartrate"):
             out["hr"] = hr_chart(streams, hr_max)
             if cat == "strength":

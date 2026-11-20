@@ -45,7 +45,7 @@
 
         {% else %}
         {% if last.extras.size > 0 %}
-        <div class="fx-extras">{% for e in last.extras %}<span>{% if e.b %}<b style="font-weight: 800">{{ e.t }}</b>{% else %}{{ e.t }}{% endif %}{% if e.v %}<b style="font-weight: 800">{{ e.v }}</b>{% endif %}</span>{% endfor %}</div>
+        <div class="fx-extras">{% for e in last.extras %}<span>{% if e.b %}<b style="font-weight: 800">{{ e.t }}</b>{% else %}{{ e.t }}{% endif %}{% if e.v %}<b style="font-weight: 800">{{ e.v }}</b>{% endif %}{% if e.icons %}<span class="fx-icons">{% for ic in e.icons %}{% render "fx_icon", name: ic %}{% endfor %}</span>{% endif %}</span>{% endfor %}</div>
         {% endif %}
 
         {% if last.best %}
