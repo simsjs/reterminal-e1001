@@ -55,7 +55,7 @@ Hours are moving time. Relative effort is Strava's own score, so it only shows i
 
    - Paste the three `STRAVA_` lines from step 2.
    - `STRAVA_BRIDGE_TOKEN`: make one with `python3 -c "import secrets; print(secrets.token_urlsafe(24))"`.
-   - Check that `SCREEN_ORDER` lists `fitness` where you want its dot (see *Page dots* in the main README).
+   - Check that `SCREEN_ORDER` lists `fitness` where you want its dot (see *Page dots* in the [setup guide](../docs/SETUP.md#page-dots)).
    - For a first look without signing in, set `STRAVA_DEMO=1`.
 
 4. **Start it.**

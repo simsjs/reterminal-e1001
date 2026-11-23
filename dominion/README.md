@@ -31,7 +31,7 @@ It checks every 2 hours and serves the result to LaraPaper as JSON. It only read
    ```
 
    - `DOMINION_BRIDGE_TOKEN`: make one with `python3 -c "import secrets; print(secrets.token_urlsafe(24))"`.
-   - Check that `SCREEN_ORDER` lists `energy` where you want its dot (see *Page dots* in the main README).
+   - Check that `SCREEN_ORDER` lists `energy` where you want its dot (see *Page dots* in the [setup guide](../docs/SETUP.md#page-dots)).
    - For a first look without logging in, set `DOMINION_DEMO=1`.
 
    Put the Dominion logo at `dominion/images/logo.png`. It stays on the Pi and out of git; see [`images/README.md`](images/README.md).

@@ -58,7 +58,7 @@ It turns all that into ready-to-draw JSON for LaraPaper, including the house pic
 
    - The location comes from `WEATHER_LAT` and `WEATHER_LON`, which are already in your `.env` for the calendar screens. `WEATHER_PLACE` is the name shown on the screen.
    - `WEATHER_BRIDGE_TOKEN` is optional. Weather isn't private, so you can leave it empty.
-   - Check that `SCREEN_ORDER` lists `weather` where you want its dot (see *Page dots* in the main README).
+   - Check that `SCREEN_ORDER` lists `weather` where you want its dot (see *Page dots* in the [setup guide](../docs/SETUP.md#page-dots)).
    - For a first look without going online, set `WEATHER_DEMO=1`.
    - Optional: copy the house pictures into `~/reterminal-e1001/weather/images/` (see [`images/README.md`](images/README.md)).
 
