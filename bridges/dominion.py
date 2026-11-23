@@ -379,27 +379,41 @@ class Source:
         self.last_ok: datetime | None = None
         self.account: str | None = os.getenv("DOMINION_ACCOUNT") or None
         self.meter: str | None = os.getenv("DOMINION_METER") or None
+        # Both tokens rotate on every refresh. If saving a new pair fails, it's kept here so the
+        # bridge keeps working until it restarts. Cleared once a save works again.
+        self._unsaved: dict[str, str] | None = None
 
     def _load_tokens(self) -> dict[str, Any]:
-        if not TOKEN_FILE.exists():
+        data: dict[str, Any] = {}
+        if TOKEN_FILE.exists():
+            with TOKEN_FILE.open() as f:
+                data = json.load(f)
+        elif not self._unsaved:
             raise RuntimeError(f"No tokens yet. Run the one-time `dompower login` (see README); expected {TOKEN_FILE}")
-        with TOKEN_FILE.open() as f:
-            return json.load(f)
+        if self._unsaved:
+            data.update(self._unsaved)
+        return data
 
     def _save_tokens(self, access: str, refresh: str) -> None:
-        # Both tokens rotate on every refresh; losing the new pair means logging in again.
+        # Losing the new pair means logging in again, so never let a failed save drop it.
+        self._unsaved = {"access_token": access, "refresh_token": refresh}
         data = {}
         with contextlib.suppress(Exception):
             data = self._load_tokens()
-        data.update({"access_token": access, "refresh_token": refresh})
-        tmp = TOKEN_FILE.with_suffix(".tmp")
-        tmp.write_text(json.dumps(data, indent=2))
-        tmp.replace(TOKEN_FILE)
+        try:
+            tmp = TOKEN_FILE.with_suffix(".tmp")
+            tmp.write_text(json.dumps(data, indent=2))
+            tmp.replace(TOKEN_FILE)
+        except Exception as err:
+            log.error("Could not save the new Dominion tokens to %s (%s). Using them from memory; "
+                      "after a restart you may need to run `dompower login` again.", TOKEN_FILE, err)
+            return
+        self._unsaved = None
         log.info("Saved refreshed Dominion tokens")
 
     async def keepalive(self) -> None:
         """Rotate the token pair so the refresh token never sits idle long enough to expire."""
-        if DEMO or not TOKEN_FILE.exists():
+        if DEMO or not (TOKEN_FILE.exists() or self._unsaved):
             return
         import aiohttp
         from dompower import DompowerClient

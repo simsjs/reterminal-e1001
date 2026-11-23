@@ -1,4 +1,20 @@
-jinja2>=3.1,<4
-PyYAML>=6.0,<7
-icalendar>=6.0,<8
-recurring-ical-events>=3.3,<4
+# Every version is pinned, so a rebuild on the Pi installs exactly what was
+# tested. Last checked together: 2026-11-23, Python 3.12.
+#
+# To upgrade on purpose: change a version in the first block, rebuild with
+# `docker compose build kitchen-board`, and if pip reports a conflict, bump
+# the package it names in the second block too.
+
+# --- What This Week uses ---
+jinja2==3.1.6
+PyYAML==6.0.4
+icalendar==7.3.2
+recurring-ical-events==3.8.2
+
+# --- What those pull in ---
+click==8.5.1
+markupsafe==3.0.4
+python-dateutil==2.9.0.post0
+six==1.17.0
+tzdata==2026.6
+x-wr-timezone==2.0.1

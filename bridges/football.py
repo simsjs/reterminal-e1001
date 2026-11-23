@@ -35,6 +35,7 @@ Environment:
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import io
 import logging
@@ -363,7 +364,7 @@ class Source:
         if DEMO:
             event, games, teams, history = _demo(now)
             self._teams = teams
-            self.panel = {**build_panel(event, games, teams, now), "table": build_table(history, teams)}
+            self.panel = await asyncio.to_thread(_full_panel, event, games, history, teams, now)
             self.error, self.last_ok = None, now
             return
 
@@ -380,9 +381,15 @@ class Source:
             fixtures = r.json()
 
         event, games = pick_matchweek(fixtures)
-        self.panel = {**build_panel(event, games, self._teams, now), "table": build_table(fixtures, self._teams)}
+        # In a worker thread: turning new crest pictures into e-ink can take a while on the Pi.
+        self.panel = await asyncio.to_thread(_full_panel, event, games, fixtures, self._teams, now)
         self.error, self.last_ok = None, now
         log.info("Refreshed: matchweek %s, %d games", event, len(games))
+
+
+def _full_panel(event: int | None, games: list[dict[str, Any]], fixtures: list[dict[str, Any]],
+                teams: dict[int, dict[str, Any]], now: datetime) -> dict[str, Any]:
+    return {**build_panel(event, games, teams, now), "table": build_table(fixtures, teams)}
 
 
 source = Source()
