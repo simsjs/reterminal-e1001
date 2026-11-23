@@ -576,10 +576,15 @@ class Source:
         self.last_ok: datetime | None = None
         self._access: str | None = None
         self._expires = 0.0
+        # Strava cancels the old refresh token as soon as it hands out a new one. If saving the
+        # new one fails, it's kept here so the next sign-in still works until the bridge restarts.
+        self._unsaved_refresh: str | None = None
         self._cache: dict[int, tuple[str, dict, dict, list]] = {}  # activity id -> details, fetched once
 
     # Tokens
     def _refresh_token(self) -> str:
+        if self._unsaved_refresh:
+            return self._unsaved_refresh
         if TOKEN_FILE.exists():
             try:
                 saved = json.loads(TOKEN_FILE.read_text())
@@ -610,13 +615,17 @@ class Source:
             raise RuntimeError(f"Strava sign-in failed ({r.status_code}): {r.text[:200]}")
         data = r.json()
         self._access, self._expires = data["access_token"], float(data.get("expires_at") or 0)
+        new_refresh = data.get("refresh_token") or self._refresh_token()
         try:
             TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
             tmp = TOKEN_FILE.with_suffix(".tmp")
-            tmp.write_text(json.dumps({"refresh_token": data["refresh_token"], "seed": START_REFRESH_TOKEN}))
+            tmp.write_text(json.dumps({"refresh_token": new_refresh, "seed": START_REFRESH_TOKEN}))
             tmp.replace(TOKEN_FILE)
+            self._unsaved_refresh = None
         except Exception as err:
-            log.warning("Could not save the Strava refresh token: %s", err)
+            self._unsaved_refresh = new_refresh
+            log.error("Could not save the new Strava refresh token to %s (%s). Using it from memory; "
+                      "after a restart you may need to sign in again (see strava/README.md).", TOKEN_FILE, err)
         return self._access
 
     async def _get(self, client: httpx.AsyncClient, path: str, **params: Any) -> Any:

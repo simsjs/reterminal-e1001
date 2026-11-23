@@ -49,7 +49,7 @@ import logging
 import math
 import os
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -162,8 +162,17 @@ def _axis_hour(t: datetime) -> str:
     return f"{t.hour % 12 or 12}{'A' if t.hour < 12 else 'P'}"
 
 
-def _local(s: str) -> datetime:
-    return datetime.fromisoformat(s).replace(tzinfo=TZ)
+def _local(s: str, offset: int | None = None) -> datetime:
+    """An Open-Meteo timestamp as local time.
+
+    Open-Meteo labels every time in a response with one UTC offset, the one in effect when
+    it was asked, even past a change to or from daylight saving time. So read each time
+    with that offset (utc_offset_seconds), then convert it to local time.
+    """
+    t = datetime.fromisoformat(s)
+    if offset is None:
+        return t.replace(tzinfo=TZ)
+    return t.replace(tzinfo=timezone(timedelta(seconds=offset))).astimezone(TZ)
 
 
 def compass(deg: float | None) -> str:
@@ -214,10 +223,11 @@ def _deg(v: float | None) -> str:
 # ── The panel ──
 def hourly_window(fc: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
     h = fc["hourly"]
+    offset = fc.get("utc_offset_seconds")
     start = now.replace(minute=0, second=0, microsecond=0)
     rows = []
     for i, t in enumerate(h["time"]):
-        ht = _local(t)
+        ht = _local(t, offset)
         if ht < start:
             continue
         rows.append(
@@ -389,11 +399,12 @@ def build_details(fc: dict[str, Any], aq: dict[str, Any] | None, now: datetime) 
     else:
         cells.append({"id": "air", "k": "Pressure", "v": f"{(c.get('pressure_msl') or 1013) * 0.02953:.2f}", "s": "inHg"})
 
-    rise, set_ = _local(d["sunrise"][0]), _local(d["sunset"][0])
+    offset = fc.get("utc_offset_seconds")
+    rise, set_ = _local(d["sunrise"][0], offset), _local(d["sunset"][0], offset)
     secs = int(d.get("daylight_duration", [0])[0] or (set_ - rise).total_seconds())
     if now > set_ and len(d["sunrise"]) > 1:
         # After sunset: tomorrow's sunrise in the small cell, tomorrow's whole day in the wide one.
-        rise, set_ = _local(d["sunrise"][1]), _local(d["sunset"][1])
+        rise, set_ = _local(d["sunrise"][1], offset), _local(d["sunset"][1], offset)
         secs = int(d.get("daylight_duration", [0, 0])[1] or (set_ - rise).total_seconds())
         cells.append({"id": "sun", "k": "Sunrise", "v": _short_clock(rise), "s": "tomorrow",
                       "kl": "Tomorrow · sunrise · sunset", "vl": f"↑ {_clock(rise)}  ↓ {_clock(set_)}",
@@ -711,7 +722,7 @@ class Source:
         now = datetime.now(TZ)
         if DEMO:
             fc, aq, alerts = _demo_raw(now)
-            self.panel, self.error, self.last_ok = build_panel(fc, aq, alerts, now), None, now
+            self.panel, self.error, self.last_ok = await asyncio.to_thread(build_panel, fc, aq, alerts, now), None, now
             return
         params = {
             "latitude": LAT,
@@ -732,7 +743,9 @@ class Source:
             r.raise_for_status()
             fc = r.json()
             aq, alerts = await asyncio.gather(self._air(client), self._alerts(client))
-        panel = build_panel(fc, aq, alerts, now)
+        # In a worker thread: turning a new house picture into e-ink can take a few seconds on
+        # the Pi, and the other screens keep answering meanwhile.
+        panel = await asyncio.to_thread(build_panel, fc, aq, alerts, now)
         self.panel, self.error, self.last_ok = panel, None, now
         log.info("Refreshed: %s°F, %s%s", panel["now"]["temp"], panel["now"]["cond"], f", alert: {panel['alert']['event']}" if panel.get("alert") else "")
 
