@@ -10,7 +10,7 @@
 # Only LaraPaper (4567) is open to the home network, because the E1001 needs it.
 # The other services listen on the Pi itself (LOCAL_BIND, default 127.0.0.1);
 # LaraPaper reaches them by container name. To open one in a browser on your
-# laptop, tunnel it over SSH (see "Previews and raw data" in the README).
+# laptop, tunnel it over SSH (see "Previews and raw data" in docs/SETUP.md).
 name: larapaper
 
 services:

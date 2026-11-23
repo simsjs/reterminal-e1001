@@ -3,7 +3,7 @@
 # (this folder is mounted into the container, so no rebuild is needed).
 
 # Shown along the bottom of This Week (first 4) only until Google Tasks is set
-# up (see "Reminders from Google Tasks" in the README). After that, this list
+# up (see "Reminders from Google Tasks" in docs/SETUP.md). After that, this list
 # is ignored.
 reminders:
   - Library books due Fri
