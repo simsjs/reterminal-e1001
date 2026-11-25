@@ -186,7 +186,8 @@ zips in LaraPaper again and rebuild the calendar service.
 
 ## Previews and raw data
 
-Only LaraPaper (port 4567) is open to your home network. The previews and the
+Only LaraPaper (port 4567) and the [screen viewer](../viewer/README.md) (port
+4574) are open to your home network. The previews and the
 bridges' raw-data pages (ports 4568-4573) answer on the Pi itself. To open them
 in a browser on your laptop, tunnel them over SSH and leave that window open:
 

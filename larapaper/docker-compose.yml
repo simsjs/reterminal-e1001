@@ -1,4 +1,5 @@
-# LaraPaper (TRMNL server) + the calendar screens, Polestar, home energy, fitness and weather screens, on the Raspberry Pi.
+# LaraPaper (TRMNL server) + the calendar screens, Polestar, home energy, fitness and weather screens,
+# and the screen viewer for your phone, on the Raspberry Pi.
 #
 #   cd ~/reterminal-e1001/larapaper
 #   cp .env.example .env   # then fill it in
@@ -7,7 +8,8 @@
 # The project name is pinned to "larapaper" so Docker reuses the volumes
 # (larapaper_database, larapaper_storage) from the original ~/larapaper setup.
 #
-# Only LaraPaper (4567) is open to the home network, because the E1001 needs it.
+# Only LaraPaper (4567) and the screen viewer (4574) are open to the home network:
+# the E1001 needs LaraPaper, and the viewer is for your phone (behind VIEWER_TOKEN).
 # The other services listen on the Pi itself (LOCAL_BIND, default 127.0.0.1);
 # LaraPaper reaches them by container name. To open one in a browser on your
 # laptop, tunnel it over SSH (see "Previews and raw data" in docs/SETUP.md).
@@ -135,6 +137,26 @@ services:
       - ../dominion/images:/app/images/dominion:ro
       # Your own club crest pictures for the Premier League screen (not in git).
       - ../football/images:/app/images/football:ro
+
+  # The screens on your phone: the latest picture of each screen in the playlist.
+  # Read-only: it never re-renders a screen or moves the rotation on. Open to the
+  # home network (like LaraPaper) behind VIEWER_TOKEN. See viewer/README.md.
+  viewer:
+    build: ../viewer
+    restart: unless-stopped
+    ports:
+      - "${VIEWER_BIND:-0.0.0.0}:4574:8080"   # http://<pi-ip>:4574/?token=<VIEWER_TOKEN> (once), then http://<pi-ip>:4574/
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - VIEWER_TOKEN=${VIEWER_TOKEN:-}
+      - VIEWER_TITLE=${VIEWER_TITLE:-E1001}
+      - LARAPAPER_DB=/larapaper/database/database.sqlite
+      - LARAPAPER_IMAGES=/larapaper/images
+    volumes:
+      - database:/larapaper/database:ro
+      - storage:/larapaper/images:ro
+    depends_on:
+      - app
 
 volumes:
   database:

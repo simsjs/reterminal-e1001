@@ -15,6 +15,8 @@ A set of glanceable, black-and-white screens for a [Seeed reTerminal E1001](http
 | 5 | **Weather** | Now, the next 5 days, wind, humidity, UV, air quality and sunrise |
 | 6 | **Premier League** | The next matchweek's games, live and full-time scores, and the table |
 
+**On your phone:** the [screen viewer](viewer/README.md) shows the latest picture of every screen, any time, at `http://<pi-ip>:4574`.
+
 Each screen has its own folder with a short README: [`polestar/`](polestar/README.md), [`dominion/`](dominion/README.md), [`strava/`](strava/README.md), [`weather/`](weather/README.md) and [`football/`](football/README.md). This Week lives in [`kitchen-board/`](kitchen-board/).
 
 ## Previews

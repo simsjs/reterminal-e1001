@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#181818">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>{{TITLE}} screens</title>
+<style>
+  :root { --bg:#181818; --card:#242424; --fg:#f1efe8; --dim:#9a988f; --accent:#e9e5d6; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  header { position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:12px;
+           padding:calc(env(safe-area-inset-top) + 12px) 16px 12px; background:rgba(24,24,24,.92); backdrop-filter:blur(8px); }
+  header h1 { font-size:18px; margin:0; flex:1; letter-spacing:.02em; }
+  header small { color:var(--dim); font-size:12px; }
+  button { font:inherit; color:var(--fg); background:var(--card); border:1px solid #3a3a3a; border-radius:999px; padding:6px 14px; }
+  button:active { background:#333; }
+  main { padding:4px 12px calc(env(safe-area-inset-bottom) + 24px); display:grid; gap:14px;
+         grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr)); max-width:1400px; margin:0 auto; }
+  .card { background:var(--card); border-radius:14px; overflow:hidden; cursor:pointer; }
+  .card img, .ph { display:block; width:100%; aspect-ratio:5/3; object-fit:contain; background:#fff; }
+  .ph { display:grid; place-items:center; color:#777; background:#2c2c2c; }
+  .meta { display:flex; align-items:baseline; gap:8px; padding:10px 14px 12px; }
+  .meta b { font-weight:600; flex:1; }
+  .meta span { color:var(--dim); font-size:12px; }
+  .live { font-size:11px; font-weight:600; color:#181818; background:var(--accent); border-radius:999px; padding:2px 8px; }
+  .msg { color:var(--dim); text-align:center; padding:48px 16px; grid-column:1/-1; }
+  /* Full-screen view: swipe or use arrow keys */
+  #full { position:fixed; inset:0; z-index:5; background:#000; display:none; flex-direction:column; }
+  #full.open { display:flex; }
+  #track { flex:1; display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; }
+  #track::-webkit-scrollbar { display:none; }
+  #track figure { flex:0 0 100%; margin:0; scroll-snap-align:center; display:grid; place-items:center; padding:8px; }
+  #track img { max-width:100%; max-height:100%; background:#fff; }
+  #bar { display:flex; align-items:center; gap:10px; padding:10px 16px calc(env(safe-area-inset-bottom) + 12px); color:var(--fg); }
+  #bar b { flex:1; }
+  #dots { display:flex; gap:6px; justify-content:center; padding:4px 0 0; }
+  #dots i { width:7px; height:7px; border-radius:50%; background:#555; }
+  #dots i.on { background:var(--fg); }
+</style>
+</head>
+<body>
+<header>
+  <h1>{{TITLE}}</h1>
+  <small id="stamp"></small>
+  <button id="refresh" aria-label="Refresh">Refresh</button>
+</header>
+<main id="list"><div class="msg">Loading…</div></main>
+
+<div id="full" role="dialog" aria-label="Screen">
+  <div id="track"></div>
+  <div id="dots"></div>
+  <div id="bar"><b id="fname"></b><span id="ftime" style="color:var(--dim);font-size:12px"></span><button id="close">Close</button></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let screens = [];
+
+function ago(iso) {
+  if (!iso) return "no picture yet";
+  const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return m + " min ago";
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + " h " + (m % 60 ? (m % 60) + " min " : "") + "ago";
+  return new Date(iso).toLocaleString([], { weekday:"short", hour:"numeric", minute:"2-digit" });
+}
+
+function el(tag, attrs = {}, kids = []) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) k === "text" ? e.textContent = v : e.setAttribute(k, v);
+  kids.forEach(k => e.append(k));
+  return e;
+}
+
+function render() {
+  const list = $("list");
+  list.replaceChildren();
+  if (!screens.length) { list.append(el("div", { class:"msg", text:"No screens in an active playlist." })); return; }
+  screens.forEach((s, i) => {
+    const pic = s.image ? el("img", { src:s.image, alt:s.name, loading:"lazy" }) : el("div", { class:"ph", text:"No picture yet" });
+    const meta = el("div", { class:"meta" }, [el("b", { text:s.name })]);
+    if (s.on_display) meta.append(el("span", { class:"live", text:"ON DISPLAY" }));
+    meta.append(el("span", { text:ago(s.updated) }));
+    const card = el("div", { class:"card", role:"button", tabindex:"0" }, [pic, meta]);
+    card.onclick = () => openFull(i);
+    card.onkeydown = e => { if (e.key === "Enter") openFull(i); };
+    list.append(card);
+  });
+}
+
+async function load() {
+  $("refresh").disabled = true;
+  try {
+    const r = await fetch("screens.json", { cache:"no-store", credentials:"same-origin" });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.status);
+    screens = data.screens;
+    render();
+    $("stamp").textContent = "checked " + new Date().toLocaleTimeString([], { hour:"numeric", minute:"2-digit" });
+    if ($("full").classList.contains("open")) buildFull(current());
+  } catch (err) {
+    $("list").replaceChildren(el("div", { class:"msg", text:"Couldn't reach the Pi: " + err.message }));
+  } finally { $("refresh").disabled = false; }
+}
+
+// ---- full screen ----
+const track = $("track");
+function current() { return Math.round(track.scrollLeft / Math.max(track.clientWidth, 1)); }
+function buildFull(at) {
+  track.replaceChildren(...screens.map(s => el("figure", {}, [s.image ? el("img", { src:s.image, alt:s.name }) : el("div", { class:"ph", text:"No picture yet" })])));
+  $("dots").replaceChildren(...screens.map(() => el("i")));
+  requestAnimationFrame(() => { track.scrollLeft = at * track.clientWidth; label(); });
+}
+function label() {
+  const i = Math.min(current(), screens.length - 1), s = screens[i];
+  if (!s) return;
+  $("fname").textContent = s.name + (s.on_display ? "  •  on display" : "");
+  $("ftime").textContent = ago(s.updated);
+  [...$("dots").children].forEach((d, j) => d.classList.toggle("on", j === i));
+}
+function openFull(i) { $("full").classList.add("open"); buildFull(i); }
+function closeFull() { $("full").classList.remove("open"); }
+track.addEventListener("scroll", () => requestAnimationFrame(label));
+$("close").onclick = closeFull;
+document.addEventListener("keydown", e => {
+  if (!$("full").classList.contains("open")) return;
+  if (e.key === "Escape") closeFull();
+  if (e.key === "ArrowRight") track.scrollBy({ left: track.clientWidth, behavior:"smooth" });
+  if (e.key === "ArrowLeft") track.scrollBy({ left: -track.clientWidth, behavior:"smooth" });
+});
+window.addEventListener("resize", () => { if ($("full").classList.contains("open")) buildFull(current()); });
+
+$("refresh").onclick = load;
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+setInterval(() => { if (!document.hidden) load(); }, 60000);
+load();
+</script>
+</body>
+</html>
