@@ -164,6 +164,11 @@ needs updating. You can add your own dates (birthdays, trips) to `countdowns:`
 in `content.yml`; whichever is sooner is shown. `HOLIDAY_SHOW_WITHIN_DAYS` in
 `.env` changes the 60-day window.
 
+While a holiday is the next one up, This Week adds a small decoration for it.
+For Christmas that's a holly sprig on the bottom-left corner of the calendar
+and a Christmas tree beside the countdown. Other holidays don't have artwork
+yet, so the screen stays plain. The art lives in `kitchen-board/app/flourish.py`.
+
 ## Page dots
 
 The dots at the top left of every screen come from one setting in

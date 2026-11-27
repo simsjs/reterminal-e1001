@@ -33,6 +33,8 @@
 .kb .col.today .ev-title { font-weight: 700; }
 .kb .ev.done .ev-time, .kb .ev.done .ev-title { text-decoration: line-through; text-decoration-thickness: 1.6px; }
 .kb .more { font: 700 12px/1 "KB Mono", monospace; letter-spacing: 1px; }
+.kb .flourish { position: absolute; left: 0; top: 0; pointer-events: none; }
+.kb .flourish-badge { position: absolute; right: 100%; bottom: -3px; margin-right: 10px; }
 .kb .rem { position: absolute; left: 20px; top: 410px; width: 760px; height: 52px; display: flex; }
 .kb .rem-lbl { background: #000; color: #fff; width: 104px; padding: 0 8px; display: flex; flex-direction: column; justify-content: center;
   font: 700 13px/1 "KB Mono", monospace; letter-spacing: 1.2px; margin-right: 14px; flex: none; }

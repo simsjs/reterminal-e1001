@@ -7,6 +7,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 import calendar_data
 import config
+import flourish
 import tasks_data
 
 _env = Environment(
@@ -62,9 +63,9 @@ def _common(page: str, n: datetime, content: dict) -> dict:
     }
 
 
-def _countdown(content: dict, today: date) -> str:
-    """The nearest upcoming holiday (from the holiday calendar) or personal
-    countdown (from content.yml), whichever is sooner."""
+def _next_occasion(content: dict, today: date) -> tuple[int, str] | None:
+    """(days away, name) of the nearest upcoming holiday (from the holiday
+    calendar) or personal countdown (from content.yml), whichever is sooner."""
     candidates = []   # (days away, name)
     window = config.HOLIDAY_SHOW_WITHIN_DAYS
     for d, name in calendar_data.holidays(today, today + timedelta(days=window + 1)) or []:
@@ -78,9 +79,14 @@ def _countdown(content: dict, today: date) -> str:
         if 0 <= days <= int(item.get("show_within_days", window)):
             candidates.append((days, str(item.get("name", ""))))
     if not candidates:
+        return None
+    return min(candidates, key=lambda c: c[0])
+
+
+def _countdown(occasion: tuple[int, str] | None) -> str:
+    if not occasion:
         return ""
-    days, name = min(candidates, key=lambda c: c[0])
-    name = name.upper()
+    days, name = occasion[0], occasion[1].upper()
     if days == 0:
         return f"{name} TODAY"
     if days == 1:
@@ -125,6 +131,7 @@ def build_week(n: datetime) -> dict:
             "items": items,
         })
 
+    occasion = _next_occasion(content, today)
     reminders = tasks_data.reminders(today)
     if reminders is None:   # Google Tasks not set up: use the typed list
         reminders = [{"title": str(r), "when": "", "overdue": False}
@@ -135,7 +142,8 @@ def build_week(n: datetime) -> dict:
         **_common("week", n, content),
         "title": "THIS WEEK",
         "week_label": _range_label(first, first + timedelta(days=count - 1)),
-        "countdown": _countdown(content, today),
+        "countdown": _countdown(occasion),
+        "flourish": flourish.art(flourish.theme_for(occasion[1]) if occasion else None),
         "days": days,
         "reminders": reminders,
         "reminders_more": more,

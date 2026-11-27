@@ -4,7 +4,7 @@
   {{ header(board_name, title, page_index, page_count, updated) }}
 
   <div class="wk-title">{{ week_label }}</div>
-  {% if countdown %}<div class="wk-count">{{ countdown }}</div>{% endif %}
+  {% if countdown %}<div class="wk-count">{{ flourish.badge }}{{ countdown }}</div>{% endif %}
 
   <div class="grid">
     {% for d in days %}
@@ -26,6 +26,8 @@
     </div>
     {% endfor %}
   </div>
+
+  {{ flourish.frame }}
 
   {% if reminders %}
   <div class="rem">
