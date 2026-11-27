@@ -32,6 +32,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", cache)
+        # Fonts are loaded cross-origin by LaraPaper's renderer; Chromium drops
+        # @font-face files without this header and silently falls back to Open Sans.
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
 

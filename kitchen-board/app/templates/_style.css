@@ -28,20 +28,20 @@
 .kb .col-num { margin-top: 3px; font: 700 27px/1 "KB Grotesk", sans-serif; letter-spacing: -1.4px; }
 .kb .col-body { flex: 1; padding: 9px 7px 0 8px; overflow: hidden; }
 .kb .ev { margin-bottom: 11px; }
-.kb .ev-time { font: 700 13px/1.15 "KB Mono", monospace; }
-.kb .ev-title { font: 400 14.5px/1.22 "KB Grotesk", sans-serif; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.kb .ev-time { font: 700 14px/1.15 "KB Mono", monospace; }
+.kb .ev-title { font: 500 16px/1.2 "KB Grotesk", sans-serif; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .kb .col.today .ev-title { font-weight: 700; }
 .kb .ev.done .ev-time, .kb .ev.done .ev-title { text-decoration: line-through; text-decoration-thickness: 1.6px; }
-.kb .more { font: 700 12px/1 "KB Mono", monospace; letter-spacing: 1px; }
+.kb .more { font: 700 13px/1 "KB Mono", monospace; letter-spacing: 1px; }
 .kb .flourish { position: absolute; left: 0; top: 0; pointer-events: none; }
 .kb .flourish-badge { position: absolute; right: 100%; bottom: -3px; margin-right: 10px; }
 .kb .rem { position: absolute; left: 20px; top: 410px; width: 760px; height: 52px; display: flex; }
 .kb .rem-lbl { background: #000; color: #fff; width: 104px; padding: 0 8px; display: flex; flex-direction: column; justify-content: center;
   font: 700 13px/1 "KB Mono", monospace; letter-spacing: 1.2px; margin-right: 14px; flex: none; }
-.kb .rem-more { margin-top: 6px; font: 700 10px/1 "KB Mono", monospace; letter-spacing: 1px; }
+.kb .rem-more { margin-top: 6px; font: 700 11px/1 "KB Mono", monospace; letter-spacing: 1px; }
 .kb .rem-list { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; grid-auto-flow: column; column-gap: 18px; }
 .kb .rem-row { display: flex; align-items: center; min-width: 0; white-space: nowrap; }
-.kb .rem-when { flex: none; font: 700 11px/1 "KB Mono", monospace; letter-spacing: 1px; margin-right: 7px; }
+.kb .rem-when { flex: none; font: 700 12px/1 "KB Mono", monospace; letter-spacing: 1px; margin-right: 7px; }
 .kb .rem-when.late { background: #000; color: #fff; padding: 3px 4px; }
-.kb .rem-item { min-width: 0; overflow: hidden; text-overflow: ellipsis; font: 400 16.5px/1.2 "KB Grotesk", sans-serif; }
+.kb .rem-item { min-width: 0; overflow: hidden; text-overflow: ellipsis; font: 500 17px/1.2 "KB Grotesk", sans-serif; }
 .kb .sample { position: absolute; right: 21px; bottom: 3px; font: 400 9px/1 "KB Mono", monospace; letter-spacing: 1px; color: #000; }
