@@ -203,7 +203,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if set_cookie and path == "/":
             # Drop the token from the address bar so it isn't saved in a home-screen shortcut.
-            c = f"{COOKIE}={TOKEN}; Max-Age=31536000; Path=/; HttpOnly; SameSite=Strict"
+            c = f"{COOKIE}={TOKEN}; Max-Age=31536000; Path=/; HttpOnly; SameSite=Lax"
             return self._send(303, b"", "text/plain", {"Location": "./", "Set-Cookie": c})
 
         if path == "/":
