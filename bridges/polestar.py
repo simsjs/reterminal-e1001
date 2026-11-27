@@ -390,7 +390,9 @@ class PolestarPoller:
         self.api: Any = None
 
     async def _login(self) -> None:
-        from pypolestar import PolestarApi  # imported lazily so DEMO mode needs no login
+        # Imported lazily so DEMO mode needs no login. The wrapper adds Polestar's
+        # new Keycloak login (Nov 2026), which pypolestar 1.12.7 can't do yet.
+        from polestar_keycloak import create_polestar_api
 
         _capture_trip_averages()
         global tracker
@@ -398,7 +400,7 @@ class PolestarPoller:
             tracker = EfficiencyTracker()
 
         vins = [v.strip() for v in os.getenv("POLESTAR_VINS", "").split(",") if v.strip()] or None
-        self.api = PolestarApi(
+        self.api = create_polestar_api(
             username=os.environ["POLESTAR_USERNAME"],
             password=os.environ["POLESTAR_PASSWORD"],
             vins=vins,
