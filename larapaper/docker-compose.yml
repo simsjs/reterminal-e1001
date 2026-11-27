@@ -152,6 +152,9 @@ services:
       - VIEWER_TITLE=${VIEWER_TITLE:-E1001}
       - LARAPAPER_DB=/larapaper/database/database.sqlite
       - LARAPAPER_IMAGES=/larapaper/images
+      # Lets the Refresh button ask LaraPaper to redraw the screens now.
+      - LARAPAPER_URL=http://app:8080
+      - LARAPAPER_API_TOKEN=${LARAPAPER_API_TOKEN:-}
     volumes:
       - database:/larapaper/database:ro
       - storage:/larapaper/images:ro
