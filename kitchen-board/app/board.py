@@ -105,6 +105,42 @@ def _range_label(first: date, last: date) -> str:
     return f"{first.strftime('%b')} {first.day} – {last.strftime('%b')} {last.day}"
 
 
+# Column fitting. These mirror .col-body / .ev / .ev-time / .ev-title / .more in
+# _style.css; keep them in step when the sizes there change.
+COL_BODY_PX = 218        # 286 inner grid - 59 header - 9 top padding
+EV_TIME_PX = 16          # 14px * 1.15
+EV_LINE_PX = 19          # 16px * 1.2
+EV_GAP_PX = 11
+EV_MAX_LINES = 3         # -webkit-line-clamp
+MORE_PX = 14
+LINE_CHARS = 16          # a little under what fits, so we drop to "+N MORE" rather than clip
+
+
+def _title_lines(title: str) -> int:
+    """Rough greedy word wrap of an event title, capped at the line clamp."""
+    lines, cur = 0, LINE_CHARS          # start "full" so the first word opens line 1
+    for word in title.split():
+        if cur + 1 + len(word) <= LINE_CHARS:
+            cur += 1 + len(word)
+        else:                            # new line; an over-long word breaks across lines
+            lines += -(-len(word) // LINE_CHARS)
+            cur = (len(word) - 1) % LINE_CHARS + 1
+    return min(max(lines, 1), EV_MAX_LINES)
+
+
+def _fit_items(items: list[dict]) -> tuple[list[dict], int]:
+    """The events that fit in a day column, and how many are left over."""
+    heights = [(EV_TIME_PX if e["time"] else 0) + EV_LINE_PX * _title_lines(e["title"]) for e in items]
+    used, shown = 0, 0
+    for i, h in enumerate(heights):
+        need = used + (EV_GAP_PX if i else 0) + h
+        rest = len(items) - (i + 1)
+        if need + (EV_GAP_PX + MORE_PX if rest else 0) > COL_BODY_PX:
+            break
+        used, shown = need, i + 1
+    return items[:shown], len(items) - shown
+
+
 def build_week(n: datetime) -> dict:
     content = load_content()
     today = n.date()
@@ -124,11 +160,13 @@ def build_week(n: datetime) -> dict:
             else:
                 done = False
             items.append({"time": clock(e.start) if e.start else "", "title": e.title, "done": done})
+        shown, more = _fit_items(items)
         days.append({
             "dow": "TODAY" if d == today else d.strftime("%a").upper(),
             "num": d.day,
             "today": d == today,
-            "items": items,
+            "items": shown,
+            "more": more,
         })
 
     occasion = _next_occasion(content, today)
@@ -147,6 +185,7 @@ def build_week(n: datetime) -> dict:
         "days": days,
         "reminders": reminders,
         "reminders_more": more,
+        "tasks_offline": tasks_data.offline(),
     }
 
 

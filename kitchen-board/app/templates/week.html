@@ -14,14 +14,13 @@
         <div class="col-num">{{ d.num }}</div>
       </div>
       <div class="col-body">
-        {% set shown = d['items'][:5] %}
-        {% for e in shown %}
+        {% for e in d['items'] %}
         <div class="ev{{ ' done' if e.done }}">
           {% if e.time %}<div class="ev-time">{{ e.time }}</div>{% endif %}
           <div class="ev-title">{{ e.title }}</div>
         </div>
         {% endfor %}
-        {% if d['items'] | length > 5 %}<div class="more">+{{ d['items'] | length - 5 }} MORE</div>{% endif %}
+        {% if d.more %}<div class="more">+{{ d.more }} MORE</div>{% endif %}
       </div>
     </div>
     {% endfor %}
@@ -29,10 +28,12 @@
 
   {{ flourish.frame }}
 
-  {% if reminders %}
+  {% if reminders or tasks_offline %}
   <div class="rem">
-    <div class="rem-lbl">REMINDERS{% if reminders_more %}<div class="rem-more">+{{ reminders_more }} MORE</div>{% endif %}</div>
-    <div class="rem-list">
+    <div class="rem-lbl">REMINDERS
+      {%- if reminders_more %}<div class="rem-more">+{{ reminders_more }} MORE</div>{% endif %}
+      {%- if tasks_offline %}<div class="rem-off">OFFLINE</div>{% endif %}</div>
+    <div class="rem-list n{{ reminders | length }}">
       {% for r in reminders %}
       <div class="rem-row">{% if r.when %}<span class="rem-when{{ ' late' if r.overdue }}">{{ r.when }}</span>{% endif %}<span class="rem-item">{{ r.title }}</span></div>
       {% endfor %}

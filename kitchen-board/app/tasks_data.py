@@ -19,6 +19,7 @@ API = "https://tasks.googleapis.com/tasks/v1"
 
 _token: tuple[float, str] | None = None        # (expires_at, access_token)
 _cache: tuple[float, list[dict]] | None = None  # (fetched_at, raw tasks)
+_failing = False                                # the last fetch attempt failed
 
 
 def configured() -> bool:
@@ -74,16 +75,23 @@ def _fetch_all() -> list[dict]:
 
 
 def _raw() -> list[dict] | None:
-    global _cache
+    global _cache, _failing
     if _cache and time.time() - _cache[0] < config.CACHE_SECONDS:
         return _cache[1]
     try:
         tasks = _fetch_all()
-        _cache = (time.time(), tasks)
+        _cache, _failing = (time.time(), tasks), False
         return tasks
     except Exception as exc:
         log.warning("Google Tasks fetch failed: %s", exc)
+        _failing = True
         return _cache[1] if _cache else None   # keep showing the last good list
+
+
+def offline() -> bool:
+    """Google Tasks is set up but the last fetch failed (e.g. an expired sign-in),
+    so the strip shows a stale or fallback list."""
+    return configured() and _failing
 
 
 def _when(due: date | None, today: date) -> str:
