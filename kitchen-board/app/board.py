@@ -185,6 +185,7 @@ def build_week(n: datetime) -> dict:
         "days": days,
         "reminders": reminders,
         "reminders_more": more,
+        "tasks_offline": tasks_data.offline(),
     }
 
 

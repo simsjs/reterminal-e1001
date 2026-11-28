@@ -28,10 +28,12 @@
 
   {{ flourish.frame }}
 
-  {% if reminders %}
+  {% if reminders or tasks_offline %}
   <div class="rem">
-    <div class="rem-lbl">REMINDERS{% if reminders_more %}<div class="rem-more">+{{ reminders_more }} MORE</div>{% endif %}</div>
-    <div class="rem-list">
+    <div class="rem-lbl">REMINDERS
+      {%- if reminders_more %}<div class="rem-more">+{{ reminders_more }} MORE</div>{% endif %}
+      {%- if tasks_offline %}<div class="rem-off">OFFLINE</div>{% endif %}</div>
+    <div class="rem-list n{{ reminders | length }}">
       {% for r in reminders %}
       <div class="rem-row">{% if r.when %}<span class="rem-when{{ ' late' if r.overdue }}">{{ r.when }}</span>{% endif %}<span class="rem-item">{{ r.title }}</span></div>
       {% endfor %}
